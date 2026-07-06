@@ -1,0 +1,85 @@
+const express = require('express');
+const router = express.Router();
+const Customer = require('../models/Customer');
+const { requireAuth } = require('../middleware/auth');
+
+router.use(requireAuth);
+
+// GET all customers (with pagination & search)
+router.get('/', async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '', status } = req.query;
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName:  { $regex: search, $options: 'i' } },
+        { accountNumber: { $regex: search, $options: 'i' } },
+        { meterNumber:   { $regex: search, $options: 'i' } },
+        { address:       { $regex: search, $options: 'i' } },
+      ];
+    }
+    if (status) query.status = status;
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { createdAt: -1 },
+    };
+
+    const result = await Customer.paginate(query, options);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET single customer
+router.get('/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+    res.json({ success: true, data: customer });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST create customer
+router.post('/', async (req, res) => {
+  try {
+    const customer = new Customer(req.body);
+    await customer.save();
+    res.status(201).json({ success: true, data: customer, message: 'Customer created successfully' });
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Meter number or account number already exists' });
+    }
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// PUT update customer
+router.put('/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+    res.json({ success: true, data: customer, message: 'Customer updated successfully' });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE customer
+router.delete('/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndDelete(req.params.id);
+    if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+    res.json({ success: true, message: 'Customer deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+module.exports = router;

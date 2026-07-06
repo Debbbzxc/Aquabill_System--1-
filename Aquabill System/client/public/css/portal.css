@@ -1,0 +1,118 @@
+/* ═══════════════════════════════════════
+   AquaBill — Customer Portal styles
+   (extends style.css — same palette/components)
+   ═══════════════════════════════════════ */
+
+.portal-wrap {
+  min-height: 100vh;
+  background: var(--navy-950);
+  background-image: radial-gradient(ellipse at 20% 0%, rgba(6,182,212,.08) 0%, transparent 55%),
+                    radial-gradient(ellipse at 80% 10%, rgba(59,130,246,.06) 0%, transparent 55%);
+  position: relative;
+  padding: 0 20px 60px;
+  overflow-x: hidden;
+}
+
+.portal-waves { position: absolute; inset: auto 0 0 0; height: 220px; overflow: hidden; pointer-events: none; z-index: 0; }
+.portal-waves .wave { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; }
+.portal-waves .wave-back { fill: rgba(6,182,212,.10); animation: portalWaveDrift 16s ease-in-out infinite alternate; }
+.portal-waves .wave-front { fill: rgba(6,182,212,.16); animation: portalWaveDrift 10s ease-in-out infinite alternate-reverse; }
+@keyframes portalWaveDrift { from { transform: translateX(-3%); } to { transform: translateX(3%); } }
+
+.portal-header {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 4px; max-width: 920px; margin: 0 auto;
+}
+.portal-back { color: var(--slate-400); font-size: 13px; text-decoration: none; }
+.portal-back:hover { color: var(--cyan-400); }
+.portal-brand { color: var(--white); font-weight: 700; font-size: 15px; }
+.portal-brand span { color: var(--slate-500); font-weight: 500; font-size: 12px; margin-left: 6px; }
+
+.portal-card {
+  position: relative; z-index: 1;
+  max-width: 920px; margin: 30px auto 0;
+  background: var(--navy-800); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 18px; padding: 36px;
+  box-shadow: var(--shadow-lg);
+}
+.portal-card.hidden { display: none; }
+
+#lookup-card { max-width: 480px; text-align: center; }
+#lookup-card h1 { font-size: 22px; color: var(--white); font-weight: 700; }
+.portal-sub { color: var(--slate-400); font-size: 13px; margin: 8px 0 22px; }
+.lookup-error { color: var(--red-400); font-size: 13px; margin: 10px 0 4px; min-height: 18px; }
+.lookup-btn { width: 100%; justify-content: center; margin-top: 10px; padding: 12px; font-size: 14px; }
+
+.result-top { display: flex; justify-content: space-between; margin-bottom: 18px; }
+
+.profile-row {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.profile-avatar {
+  width: 54px; height: 54px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--cyan-500), var(--blue-500));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: var(--navy-900);
+}
+.profile-info { flex: 1; min-width: 180px; }
+.profile-name { font-size: 18px; font-weight: 700; color: var(--white); }
+.profile-meta { font-size: 12.5px; color: var(--slate-500); margin-top: 3px; }
+.balance-box { text-align: right; }
+.balance-label { font-size: 11px; color: var(--slate-500); text-transform: uppercase; letter-spacing: .06em; }
+.balance-amt { font-size: 26px; font-weight: 700; color: var(--cyan-400); margin-top: 4px; }
+
+#result-card .two-col { grid-template-columns: repeat(auto-fit, minmax(320px,1fr)); margin-bottom: 0; }
+#result-card .card { margin-bottom: 0; }
+
+/* ── PAY ONLINE (bill table action) ── */
+.pay-online-btn {
+  padding: 5px 11px; font-size: 11.5px; font-weight: 700;
+  border-radius: 20px; border: 1px solid rgba(34,211,238,.3);
+  background: rgba(34,211,238,.08); color: var(--cyan-300);
+  cursor: pointer; transition: all var(--transition); white-space: nowrap;
+}
+.pay-online-btn:hover { background: rgba(34,211,238,.18); border-color: var(--cyan-400); }
+
+/* ── PAY MODAL ── */
+.pay-bill-summary {
+  background: var(--navy-700); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px; padding: 14px 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+}
+.pay-bill-summary .pbs-label { font-size: 11px; color: var(--slate-500); text-transform: uppercase; letter-spacing: .05em; }
+.pay-bill-summary .pbs-value { font-size: 14px; font-weight: 700; color: var(--white); margin-top: 2px; }
+.pay-bill-summary .pbs-balance { text-align: right; }
+.pay-bill-summary .pbs-balance .pbs-value { color: var(--cyan-300); font-size: 18px; }
+
+.ewallet-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.ewallet-opt {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 16px 10px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.09);
+  background: var(--navy-700); cursor: pointer; transition: all var(--transition);
+}
+.ewallet-opt:hover { border-color: rgba(34,211,238,.35); }
+.ewallet-opt.selected { border-color: var(--cyan-400); background: rgba(34,211,238,.08); box-shadow: 0 0 0 3px rgba(34,211,238,.1); }
+.ewallet-badge {
+  width: 100%; padding: 10px 0; border-radius: 8px;
+  font-size: 13px; font-weight: 800; letter-spacing: .02em; color: white;
+  display: flex; align-items: center; justify-content: center;
+}
+.ewallet-badge.gcash { background: linear-gradient(135deg, #0072ce, #00a3ff); }
+.ewallet-badge.maya { background: linear-gradient(135deg, #00c16e, #05a357); }
+.ewallet-name { font-size: 12px; color: var(--slate-400); font-weight: 600; }
+
+.pay-error { color: var(--red-400); font-size: 12.5px; margin-top: 12px; min-height: 16px; }
+
+.pay-processing {
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+  padding: 14px 0 2px; color: var(--slate-300); font-size: 13px; font-weight: 600;
+}
+.pay-processing.hidden { display: none; }
+.pay-spinner {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2.5px solid rgba(34,211,238,.2); border-top-color: var(--cyan-400);
+  animation: paySpin .8s linear infinite;
+}
+@keyframes paySpin { to { transform: rotate(360deg); } }

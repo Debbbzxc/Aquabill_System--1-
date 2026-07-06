@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AquaBill — Customer Portal</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <link rel="stylesheet" href="/css/portal.css"/>
+</head>
+<body>
+
+<div class="portal-wrap">
+  <div class="portal-waves" aria-hidden="true">
+    <svg viewBox="0 0 1440 220" preserveAspectRatio="none" class="wave wave-back">
+      <path d="M0,80 C240,140 480,20 720,80 C960,140 1200,20 1440,80 L1440,220 L0,220 Z"></path>
+    </svg>
+    <svg viewBox="0 0 1440 220" preserveAspectRatio="none" class="wave wave-front">
+      <path d="M0,100 C240,40 480,160 720,100 C960,40 1200,160 1440,100 L1440,220 L0,220 Z"></path>
+    </svg>
+  </div>
+
+  <header class="portal-header">
+    <a href="/" class="portal-back">‹ Staff Sign In</a>
+    <div class="portal-brand">
+      <svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C12 3 6.5 10.6 6.5 14.8C6.5 18.2 9 20.8 12 20.8C15 20.8 17.5 18.2 17.5 14.8C17.5 10.6 12 3 12 3Z"/></svg>
+      AquaBill <span>Customer Portal</span>
+    </div>
+  </header>
+
+  <!-- LOOKUP FORM -->
+  <div class="portal-card" id="lookup-card">
+    <h1>Check Your Water Bill</h1>
+    <p class="portal-sub">Enter your account number and last name to view your balance, bills, and payment history.</p>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">Account Number</label>
+        <input type="text" id="lk-account" class="form-control" placeholder="WB-00001"/>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Last Name</label>
+        <input type="text" id="lk-lastname" class="form-control" placeholder="Dela Cruz"/>
+      </div>
+    </div>
+    <div class="lookup-error" id="lookup-error"></div>
+    <button class="btn btn-primary lookup-btn" id="lookup-btn"><svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg> View My Account</button>
+  </div>
+
+  <!-- RESULT -->
+  <div class="portal-card hidden" id="result-card">
+    <div class="result-top">
+      <button class="btn btn-secondary btn-sm" id="back-btn">‹ Back</button>
+      <div></div>
+    </div>
+
+    <div class="profile-row">
+      <div class="profile-avatar" id="profile-avatar">—</div>
+      <div class="profile-info">
+        <div class="profile-name" id="profile-name">—</div>
+        <div class="profile-meta" id="profile-meta">—</div>
+      </div>
+      <div class="balance-box">
+        <div class="balance-label">Current Balance</div>
+        <div class="balance-amt" id="balance-amt">—</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><div class="card-title"><svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6M9 9h2"/></svg> Bill History</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Period</th><th>Consumption</th><th>Total</th><th>Balance</th><th>Due Date</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="bills-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title"><svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/></svg> Payment History</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>OR #</th><th>Amount</th><th>Method</th><th>Date</th></tr>
+            </thead>
+            <tbody id="payments-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Pay Online Modal -->
+<div class="modal-overlay" id="pay-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Pay Bill Online</div>
+      <button class="modal-close" data-close="pay-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="pay-bill-summary" id="pay-bill-summary"></div>
+
+      <label class="form-label" style="margin-top:16px;display:block;">Choose Payment Method</label>
+      <div class="ewallet-options" id="ewallet-options">
+        <button type="button" class="ewallet-opt" data-method="GCash">
+          <span class="ewallet-badge gcash">GCash</span>
+          <span class="ewallet-name">GCash</span>
+        </button>
+        <button type="button" class="ewallet-opt" data-method="PayMaya">
+          <span class="ewallet-badge maya">Maya</span>
+          <span class="ewallet-name">PayMaya</span>
+        </button>
+      </div>
+
+      <div class="form-grid" style="margin-top:16px;">
+        <div class="form-group full">
+          <label class="form-label">Mobile Number Linked to Wallet</label>
+          <input type="text" id="pay-mobile" class="form-control" placeholder="09XXXXXXXXX" maxlength="11"/>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Amount to Pay</label>
+          <input type="number" id="pay-amount" class="form-control" placeholder="0.00"/>
+          <span class="text-muted" id="pay-amount-hint"></span>
+        </div>
+      </div>
+
+      <div class="pay-error" id="pay-error"></div>
+      <div class="pay-processing hidden" id="pay-processing">
+        <div class="pay-spinner"></div>
+        <span id="pay-processing-text">Connecting to GCash…</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="pay-modal" id="pay-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="confirm-pay-btn">Pay Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal receipt-modal-shell">
+    <div class="modal-header">
+      <div class="modal-title">Payment Receipt</div>
+      <button class="modal-close" data-close="receipt-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="receipt-print" id="receipt-content"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="receipt-modal">Close</button>
+      <button class="btn btn-primary" id="print-receipt-btn">
+        <svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M6 17v4h12v-4"/></svg>
+        Print Receipt
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/portal.jsx"></script>
+</body>
+</html>

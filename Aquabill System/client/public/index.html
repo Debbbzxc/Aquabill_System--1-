@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AquaBill — Water Billing System</title>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+
+//login
+<div id="login-screen">
+  <div class="login-waves" aria-hidden="true">
+    <svg viewBox="0 0 1440 220" preserveAspectRatio="none" class="wave wave-back">
+      <path d="M0,80 C240,140 480,20 720,80 C960,140 1200,20 1440,80 L1440,220 L0,220 Z"></path>
+    </svg>
+    <svg viewBox="0 0 1440 220" preserveAspectRatio="none" class="wave wave-front">
+      <path d="M0,100 C240,40 480,160 720,100 C960,40 1200,160 1440,100 L1440,220 L0,220 Z"></path>
+    </svg>
+    <span class="bubble b1"></span><span class="bubble b2"></span><span class="bubble b3"></span>
+    <span class="bubble b4"></span><span class="bubble b5"></span>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="drop">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2.6C12 2.6 5.4 11.4 5.4 16C5.4 19.6 8.4 22 12 22C15.6 22 18.6 19.6 18.6 16C18.6 11.4 12 2.6 12 2.6Z" fill="white"/>
+          <path d="M8.7 15.6c0 2 1.7 3.6 3.5 3.6" stroke="#0e7490" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.55"/>
+        </svg>
+      </div>
+      <h1>AquaBill</h1>
+      <p>Water Billing Station Management</p>
+    </div>
+    <div class="login-form">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="login-username" placeholder="Enter username" autocomplete="username"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password"/>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="login-btn" id="login-btn">Sign In</button>
+    </div>
+    <div class="login-hint">Staff &amp; admin access only.</div>
+    <div class="login-divider"><span>or</span></div>
+    <a class="portal-link" href="/portal.html">
+      <svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C12 3 6.5 10.6 6.5 14.8C6.5 18.2 9 20.8 12 20.8C15 20.8 17.5 18.2 17.5 14.8C17.5 10.6 12 3 12 3Z"/></svg>
+      Check your bill — Customer Portal
+    </a>
+  </div>
+</div>
+
+//app shell
+<div id="app-shell" class="hidden">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-row">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2.6C12 2.6 5.4 11.4 5.4 16C5.4 19.6 8.4 22 12 22C15.6 22 18.6 19.6 18.6 16C18.6 11.4 12 2.6 12 2.6Z" fill="white"/>
+            <path d="M8.7 15.6c0 2 1.7 3.6 3.5 3.6" stroke="#0e7490" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.55"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <h1>AquaBill</h1>
+          <span>Water Billing Station</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Overview</div>
+      <button class="nav-item active" data-page="dashboard">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-6"/><path d="M2 20h20"/></svg></span> Dashboard
+      </button>
+
+      <div class="nav-section-label">Billing</div>
+      <button class="nav-item" data-page="customers">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><path d="M15.5 8.3a3.2 3.2 0 1 1 3 4.3"/><path d="M15 13.6c2.6.4 4.5 2.4 4.5 5.2"/></svg></span> Customers
+      </button>
+      <button class="nav-item" data-page="meter-reading">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><path d="M4 15h1M19 15h1M12 6v1"/></svg></span> Meter Reading
+      </button>
+      <button class="nav-item" data-page="bills">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6M9 9h2"/></svg></span> Bills
+      </button>
+      <button class="nav-item" data-page="payments">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/></svg></span> Payments
+      </button>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="sidebar-user-info">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div>
+          <div class="user-name" id="user-fullname">—</div>
+          <div class="user-role" id="user-role">—</div>
+        </div>
+      </div>
+      <button class="logout-btn" id="logout-btn">
+        <svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  //main
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="topbar-date" id="topbar-date"></div>
+      </div>
+      <div id="topbar-actions"></div>
+    </header>
+
+    <div class="content">
+
+      //dashboard
+      <div class="page active" id="page-dashboard">
+
+        <div class="hero-banner">
+          <div class="hero-text">
+            <h2 id="hero-greeting">Welcome back</h2>
+            <p>Here's how your water billing station is flowing today.</p>
+          </div>
+          <div class="hero-flow" aria-hidden="true">
+            <svg viewBox="0 0 220 70" class="flow-pipe">
+              <rect x="0" y="28" width="220" height="14" rx="7" class="pipe-track"></rect>
+              <rect x="0" y="28" width="220" height="14" rx="7" class="pipe-fill"></rect>
+              <circle cx="14" cy="35" r="4" class="flow-dot d1"></circle>
+              <circle cx="14" cy="35" r="4" class="flow-dot d2"></circle>
+              <circle cx="14" cy="35" r="4" class="flow-dot d3"></circle>
+              <text x="0" y="62" class="pipe-label">Source</text>
+              <text x="178" y="62" class="pipe-label">Customers</text>
+            </svg>
+          </div>
+          <svg viewBox="0 0 600 60" preserveAspectRatio="none" class="hero-wave" aria-hidden="true">
+            <path d="M0,30 C150,55 300,5 450,30 C525,42 575,18 600,30 L600,60 L0,60 Z"></path>
+          </svg>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-top">
+              <div class="stat-label">Total Customers</div>
+              <div class="stat-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><path d="M15.5 8.3a3.2 3.2 0 1 1 3 4.3"/><path d="M15 13.6c2.6.4 4.5 2.4 4.5 5.2"/></svg></div>
+            </div>
+            <div class="stat-value" id="stat-customers">—</div>
+            <div class="stat-sub" id="stat-active">— active</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-top">
+              <div class="stat-label">Collected This Month</div>
+              <div class="stat-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18a1 1 0 0 1 1 1v2"/><path d="M3 7.5v10A2.5 2.5 0 0 0 5.5 20H19a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1H6a1 1 0 0 1 0-2h13"/><circle cx="16.5" cy="14.5" r="1.1" fill="currentColor" stroke="none"/></svg></div>
+            </div>
+            <div class="stat-value" id="stat-month">—</div>
+            <div class="stat-sub" id="stat-year">— this year</div>
+          </div>
+          <div class="stat-card amber">
+            <div class="stat-top">
+              <div class="stat-label">Unpaid Bills</div>
+              <div class="stat-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 17h6M9 9h2"/></svg></div>
+            </div>
+            <div class="stat-value" id="stat-unpaid">—</div>
+            <div class="stat-sub">Needs collection</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-top">
+              <div class="stat-label">Outstanding Balance</div>
+              <div class="stat-icon-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21.5 20h-19L12 3.5Z"/><path d="M12 9.5v4.2"/><circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none"/></svg></div>
+            </div>
+            <div class="stat-value" id="stat-outstanding">—</div>
+            <div class="stat-sub" id="stat-overdue">— overdue</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Monthly Collections</div>
+              <span class="text-muted" id="chart-year"></span>
+            </div>
+            <div class="chart-bars" id="chart-bars">
+              <div class="loading">Loading chart…</div>
+            </div>
+            <div style="display:flex;justify-content:center;padding:0 20px 14px;gap:6px;">
+              <span id="chart-labels" style="display:flex;gap:6px;width:100%;justify-content:space-around;font-size:10px;color:#64748b;"></span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">Recent Payments</div></div>
+            <div class="card-body" id="recent-payments-list">
+              <div class="loading">Loading…</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">Collection Rate</div></div>
+            <div class="card-body tank-card-body">
+              <div class="tank">
+                <svg viewBox="0 0 120 140" class="tank-svg">
+                  <rect x="6" y="6" width="108" height="128" rx="14" class="tank-shell"></rect>
+                  <clipPath id="tankClip"><rect x="6" y="6" width="108" height="128" rx="14"></rect></clipPath>
+                  <g clip-path="url(#tankClip)">
+                    <rect id="tank-water" x="0" y="140" width="120" height="140" class="tank-water"></rect>
+                    <path id="tank-wave" d="M0,140 Q15,134 30,140 T60,140 T90,140 T120,140 L120,280 L0,280 Z" class="tank-wave-shape"></path>
+                  </g>
+                  <rect x="6" y="6" width="108" height="128" rx="14" class="tank-shell-outline"></rect>
+                </svg>
+                <div class="tank-pct" id="tank-pct">—%</div>
+              </div>
+              <div class="tank-legend">
+                <div class="tank-legend-item"><span class="dot dot-cyan"></span> Collected — <strong id="tank-collected">—</strong></div>
+                <div class="tank-legend-item"><span class="dot dot-slate"></span> Outstanding — <strong id="tank-outstanding">—</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      //customers
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="table-toolbar">
+            <div class="search-box">
+              <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg></span>
+              <input type="text" id="customer-search" placeholder="Search name, account, meter…"/>
+            </div>
+            <select class="filter-select" id="customer-status-filter">
+              <option value="">All Status</option>
+              <option value="Active">Active</option>
+              <option value="Disconnected">Disconnected</option>
+              <option value="Pending">Pending</option>
+            </select>
+            <button class="btn btn-primary" id="add-customer-btn">＋ Add Customer</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Account #</th>
+                  <th>Name</th>
+                  <th>Meter #</th>
+                  <th>Address / Barangay</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Balance</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="customers-tbody">
+                <tr><td colspan="8"><div class="loading">Loading…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="customers-pagination"></div>
+        </div>
+      </div>
+
+      //meter reading
+      <div class="page" id="page-meter-reading">
+        <div class="card" style="max-width:680px;">
+          <div class="card-header"><div class="card-title"><svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><path d="M4 15h1M19 15h1M12 6v1"/></svg> Record Meter Reading</div></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label class="form-label">Customer</label>
+                <select id="mr-customer" class="form-control">
+                  <option value="">— Select customer —</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Previous Reading</label>
+                <input type="number" id="mr-prev" class="form-control" readonly placeholder="Auto-filled"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Current Reading (m³)</label>
+                <input type="number" id="mr-current" class="form-control" placeholder="0"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Billing Month</label>
+                <select id="mr-month" class="form-control">
+                  <option value="1">January</option><option value="2">February</option>
+                  <option value="3">March</option><option value="4">April</option>
+                  <option value="5">May</option><option value="6">June</option>
+                  <option value="7">July</option><option value="8">August</option>
+                  <option value="9">September</option><option value="10">October</option>
+                  <option value="11">November</option><option value="12">December</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Billing Year</label>
+                <input type="number" id="mr-year" class="form-control" placeholder="2025"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Due Date</label>
+                <input type="date" id="mr-due" class="form-control"/>
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Remarks</label>
+                <input type="text" id="mr-remarks" class="form-control" placeholder="Optional notes…"/>
+              </div>
+            </div>
+
+            <div class="bill-preview" id="bill-preview" style="display:none;">
+              <div class="bill-preview-title">Bill Preview</div>
+              <div class="bill-line"><span>Consumption</span><span id="prev-consumption">—</span></div>
+              <div class="bill-line"><span>Water Charge</span><span id="prev-water">—</span></div>
+              <div class="bill-line"><span>Environment Fee</span><span id="prev-env">—</span></div>
+              <div class="bill-line"><span>Maintenance Fee</span><span id="prev-maint">—</span></div>
+              <div class="bill-line"><span>Previous Balance</span><span id="prev-balance">—</span></div>
+              <div class="bill-line total"><span>Total Amount Due</span><span id="prev-total">—</span></div>
+            </div>
+
+            <div style="margin-top:20px; display:flex; gap:10px;">
+              <button class="btn btn-secondary" id="mr-calc-btn">🧮 Calculate Preview</button>
+              <button class="btn btn-primary" id="mr-submit-btn">✓ Save Bill</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      //bills
+      <div class="page" id="page-bills">
+        <div class="card">
+          <div class="table-toolbar">
+            <div class="search-box">
+              <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg></span>
+              <input type="text" id="bills-search" placeholder="Search by customer…"/>
+            </div>
+            <select class="filter-select" id="bills-status-filter">
+              <option value="">All Status</option>
+              <option value="Unpaid">Unpaid</option>
+              <option value="Paid">Paid</option>
+              <option value="Overdue">Overdue</option>
+              <option value="Partial">Partial</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Billing Period</th>
+                  <th>Consumption</th>
+                  <th>Total Amount</th>
+                  <th>Balance</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="bills-tbody">
+                <tr><td colspan="8"><div class="loading">Loading…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="bills-pagination"></div>
+        </div>
+      </div>
+
+      //payments
+      <div class="page" id="page-payments">
+        <div class="card">
+          <div class="table-toolbar">
+            <div class="search-box">
+              <span class="search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/></svg></span>
+              <input type="text" id="payments-search" placeholder="Search payments…"/>
+            </div>
+            <button class="btn btn-primary" id="add-payment-btn">＋ Record Payment</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>OR #</th>
+                  <th>Customer</th>
+                  <th>Bill Period</th>
+                  <th>Amount Paid</th>
+                  <th>Method</th>
+                  <th>Date</th>
+                  <th>Received By</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="payments-tbody">
+                <tr><td colspan="8"><div class="loading">Loading…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" id="payments-pagination"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app-shell -->
+
+//modals
+
+//customer modal
+<div class="modal-overlay" id="customer-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="customer-modal-title">Add Customer</div>
+      <button class="modal-close" data-close="customer-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="customer-id"/>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">First Name *</label>
+          <input type="text" id="c-firstName" class="form-control" placeholder/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name *</label>
+          <input type="text" id="c-lastName" class="form-control" placeholder/>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Address *</label>
+          <input type="text" id="c-address" class="form-control" placeholder/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Barangay *</label>
+          <input type="text" id="c-barangay" class="form-control" placeholder/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Meter Number *</label>
+          <input type="text" id="c-meterNumber" class="form-control" placeholder/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Number</label>
+          <input type="text" id="c-contactNumber" class="form-control" placeholder/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="c-email" class="form-control" placeholder="email@example.com"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Connection Type</label>
+          <select id="c-connectionType" class="form-control">
+            <option value="Residential">Residential</option>
+            <option value="Commercial">Commercial</option>
+            <option value="Industrial">Industrial</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select id="c-status" class="form-control">
+            <option value="Active">Active</option>
+            <option value="Pending">Pending</option>
+            <option value="Disconnected">Disconnected</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="customer-modal">Cancel</button>
+      <button class="btn btn-primary" id="save-customer-btn">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+//payment modal
+<div class="modal-overlay" id="payment-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Record Payment</div>
+      <button class="modal-close" data-close="payment-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Bill (Customer – Period)</label>
+          <select id="p-bill" class="form-control">
+            <option value="">— Select unpaid bill —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Amount Paid</label>
+          <input type="number" id="p-amount" class="form-control" placeholder="0.00"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select id="p-method" class="form-control">
+            <option value="Cash">Cash</option>
+            <option value="GCash">GCash</option>
+            <option value="PayMaya">PayMaya</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Check">Check</option>
+          </select>
+        </div>
+        <div class="form-group" id="p-ref-group" style="display:none;">
+          <label class="form-label">Reference / Transaction No.</label>
+          <input type="text" id="p-reference" class="form-control" placeholder="Auto-generated if left blank"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Date</label>
+          <input type="date" id="p-date" class="form-control"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Received By</label>
+          <input type="text" id="p-receiver" class="form-control" placeholder="Cashier name"/>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Notes</label>
+          <input type="text" id="p-notes" class="form-control" placeholder="Optional…"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="payment-modal">Cancel</button>
+      <button class="btn btn-primary" id="save-payment-btn">Record Payment</button>
+    </div>
+  </div>
+</div>
+
+//receipt modal
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal receipt-modal-shell">
+    <div class="modal-header">
+      <div class="modal-title">Payment Receipt</div>
+      <button class="modal-close" data-close="receipt-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="receipt-print" id="receipt-content"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="receipt-modal">Close</button>
+      <button class="btn btn-primary" id="print-receipt-btn">
+        <svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="4" y="9" width="16" height="8" rx="1.5"/><path d="M6 17v4h12v-4"/></svg>
+        Print Receipt
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="/js/app.jsx"></script>
+</body>
+</html>
