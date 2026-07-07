@@ -31,11 +31,19 @@ const customerSchema = new mongoose.Schema({
 
 customerSchema.plugin(mongoosePaginate);
 
-// Auto-generate account number before validation (fixes the "required" error)
+
 customerSchema.pre('validate', async function (next) {
   if (!this.accountNumber) {
-    const count = await mongoose.model('Customer').countDocuments();
-    this.accountNumber = `WB-${String(count + 1).padStart(5, '0')}`;
+    const lastCustomer = await mongoose.model('Customer')
+      .findOne({ accountNumber: { $exists: true, $ne: null } })
+      .sort({ accountNumber: -1 });
+
+    let nextNumber = 1;
+    if (lastCustomer && lastCustomer.accountNumber) {
+      const lastNum = parseInt(lastCustomer.accountNumber.split('-')[1], 10);
+      if (!isNaN(lastNum)) nextNumber = lastNum + 1;
+    }
+    this.accountNumber = `WB-${String(nextNumber).padStart(5, '0')}`;
   }
   next();
 });
