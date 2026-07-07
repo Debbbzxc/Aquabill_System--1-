@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/api/external', require('./routes/external'));
+
 // Session
 app.use(session({
   secret: process.env.SESSION_SECRET || 'aquabill_secret_change_me',
@@ -59,6 +59,8 @@ app.use('/api/bills',     require('./routes/bills'));
 app.use('/api/payments',  require('./routes/payments'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/portal',    require('./routes/portal'));
+app.use('/api/external',  require('./routes/external'));
+app.use('/api/reports',   require('./routes/reports'));
 
 // Serve frontend
 app.get('*', (req, res) => {

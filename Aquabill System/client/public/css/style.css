@@ -546,4 +546,17 @@ select.form-control option { background: var(--navy-700); }
   .receipt-row strong { color: black !important; }
   .receipt-row span, .receipt-brand-sub, .receipt-footer { color: #555 !important; }
   .receipt-total strong { color: #0e7490 !important; }
+
+  /* Summary Report printing */
+  #page-reports.active #report-content,
+  #page-reports.active #report-content * { visibility: visible; }
+  #page-reports.active #report-content {
+    position: absolute; top: 0; left: 0; width: 100%;
+    background: white; color: black; padding: 20px;
+  }
+  #page-reports.active .card { background: white; border: 1px solid #ccc; color: black; }
+  #page-reports.active .stat-value,
+  #page-reports.active .card-title,
+  #page-reports.active table { color: black !important; }
+  #page-reports.active .no-print { display: none !important; }
 }

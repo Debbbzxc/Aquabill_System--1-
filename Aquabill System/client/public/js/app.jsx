@@ -51,7 +51,7 @@ function statusBadge(status) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// ── AUTH ───────────────────────────────
+
 function showLogin() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-shell').classList.add('hidden');
@@ -423,16 +423,8 @@ async function loadBills() {
   } catch(e) {}
 }
 
-window.payBill = async (billId) => {
-  // Pre-fill payment modal for this bill
-  document.getElementById('add-payment-btn').click();
-  const data = await api(`/api/bills/${billId}`);
-  if (data.success) {
-    const sel = document.getElementById('p-bill');
-    // Load unpaid bills and pre-select
-    await loadUnpaidBills();
-    sel.value = billId;
-  }
+window.payBill = (billId) => {
+  openPaymentModal(billId);
 };
 
 // ── PAYMENTS ──────────────────────────
@@ -457,7 +449,7 @@ async function loadUnpaidBills() {
   });
 }
 
-document.getElementById('add-payment-btn').addEventListener('click', async () => {
+async function openPaymentModal(preselectBillId) {
   await loadUnpaidBills();
   document.getElementById('p-amount').value = '';
   document.getElementById('p-method').value = 'Cash';
@@ -466,7 +458,15 @@ document.getElementById('add-payment-btn').addEventListener('click', async () =>
   document.getElementById('p-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('p-receiver').value = currentUser?.fullName || '';
   document.getElementById('p-notes').value = '';
+
+  if (preselectBillId) {
+    document.getElementById('p-bill').value = preselectBillId;
+  }
   openModal('payment-modal');
+}
+
+document.getElementById('add-payment-btn').addEventListener('click', () => {
+  openPaymentModal();
 });
 
 document.getElementById('p-method').addEventListener('change', (e) => {
