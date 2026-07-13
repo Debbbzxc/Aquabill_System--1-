@@ -4,6 +4,7 @@ const { requireAuth } = require('../middleware/auth');
 router.use(requireAuth);
 const Bill = require('../models/Bill');
 const Customer = require('../models/Customer');
+const notifyAdmin = require('../notifyAdmin');
 
 // Calculate bill amount based on consumption
 function calculateBill(consumption, previousBalance = 0) {
@@ -164,6 +165,26 @@ router.post('/calculate', async (req, res) => {
     const result = calculateBill(consumption, previousBalance);
 
     res.json({ success: true, data: { ...result, consumption, previousReading, previousBalance } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE bill (only allowed if no payment has been made yet)
+router.delete('/:id', async (req, res) => {
+  try {
+    const bill = await Bill.findById(req.params.id);
+    if (!bill) return res.status(404).json({ success: false, message: 'Bill not found' });
+
+    if (bill.amountPaid > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete a bill that already has payments recorded against it.',
+      });
+    }
+
+    await Bill.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Bill deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

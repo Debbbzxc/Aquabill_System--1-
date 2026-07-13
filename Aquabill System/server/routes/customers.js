@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Customer = require('../models/Customer');
 const { requireAuth } = require('../middleware/auth');
-
+const notifyAdmin = require('../notifyAdmin');
 router.use(requireAuth);
 
 // GET all customers (with pagination & search)

@@ -90,6 +90,11 @@
       <button class="nav-item" data-page="payments">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5.5" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/></svg></span> Payments
       </button>
+
+      <div class="nav-section-label">Reports</div>
+      <button class="nav-item" data-page="reports">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h10l4 4v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M15 3v4h4"/><path d="M8 12h8M8 16h8M8 8h3"/></svg></span> Summary Report
+      </button>
     </nav>
 
     <div class="sidebar-user">
@@ -280,7 +285,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Current Reading (m³)</label>
-                <input type="number" id="mr-current" class="form-control" placeholder="0"/>
+                <select id="mr-current" class="form-control"></select>
               </div>
               <div class="form-group">
                 <label class="form-label">Billing Month</label>
@@ -394,6 +399,81 @@
             </table>
           </div>
           <div class="pagination" id="payments-pagination"></div>
+        </div>
+      </div>
+
+      <!-- ── SUMMARY REPORT ── -->
+      <div class="page" id="page-reports">
+        <div class="card no-print">
+          <div class="table-toolbar">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">From</label>
+              <input type="date" id="report-from" class="form-control"/>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">To</label>
+              <input type="date" id="report-to" class="form-control"/>
+            </div>
+            <button class="btn btn-primary" id="report-run-btn">Generate</button>
+            <button class="btn" id="report-print-btn">🖨 Print / Export PDF</button>
+          </div>
+        </div>
+
+        <div id="report-content">
+          <div class="stats-grid">
+            <div class="stat-card blue">
+              <div class="stat-top"><div class="stat-label">Bills Generated</div></div>
+              <div class="stat-value" id="rpt-bills">—</div>
+              <div class="stat-sub" id="rpt-billed-total">—</div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-top"><div class="stat-label">Total Collected</div></div>
+              <div class="stat-value" id="rpt-collected">—</div>
+              <div class="stat-sub" id="rpt-payments-count">—</div>
+            </div>
+            <div class="stat-card red">
+              <div class="stat-top"><div class="stat-label">Outstanding Balance</div></div>
+              <div class="stat-value" id="rpt-outstanding">—</div>
+              <div class="stat-sub">As of today</div>
+            </div>
+            <div class="stat-card amber">
+              <div class="stat-top"><div class="stat-label">New Customers</div></div>
+              <div class="stat-value" id="rpt-new-customers">—</div>
+              <div class="stat-sub">In selected period</div>
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Bills by Status</div></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Status</th><th>Count</th><th>Total Amount</th></tr></thead>
+                  <tbody id="rpt-bills-status-tbody"><tr><td colspan="3"><div class="loading">Loading…</div></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header"><div class="card-title">Payments by Mode</div></div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Payment Mode</th><th>Total Collected</th></tr></thead>
+                  <tbody id="rpt-payments-mode-tbody"><tr><td colspan="2"><div class="loading">Loading…</div></td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title">Top Barangays by Collections</div></div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Barangay</th><th># Payments</th><th>Total Collected</th></tr></thead>
+                <tbody id="rpt-barangays-tbody"><tr><td colspan="3"><div class="loading">Loading…</div></td></tr></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 

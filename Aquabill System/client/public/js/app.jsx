@@ -51,7 +51,7 @@ function statusBadge(status) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-
+// ── AUTH ───────────────────────────────
 function showLogin() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-shell').classList.add('hidden');
@@ -107,6 +107,7 @@ const pageTitles = {
   'meter-reading': 'Meter Reading',
   bills: 'Bills',
   payments: 'Payments',
+  reports: 'Summary Report',
 };
 
 document.querySelectorAll('.nav-item').forEach(btn => {
@@ -127,6 +128,7 @@ function loadPage(page) {
   if (page === 'bills') loadBills();
   if (page === 'payments') loadPayments();
   if (page === 'meter-reading') loadMeterReading();
+  if (page === 'reports') loadReportsPage();
 }
 
 // Close modal buttons
@@ -315,6 +317,30 @@ window.deleteCustomer = async (id, name) => {
 };
 
 // ── METER READING ─────────────────────
+// Builds the Current Reading dropdown as: previous reading + 0 up to +100.
+// This keeps entries realistic (meters only count up) while still letting
+// staff pick whatever value the physical meter shows.
+function populateCurrentReadingOptions(prevValue) {
+  const currentSelect = document.getElementById('mr-current');
+  if (!currentSelect) return;
+  const base = parseFloat(prevValue) || 0;
+  const previouslySelected = currentSelect.value;
+
+  currentSelect.innerHTML = '<option value="">— Select reading —</option>';
+  for (let i = 0; i <= 100; i++) {
+    const val = base + i;
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = val;
+    currentSelect.appendChild(opt);
+  }
+
+  // Preserve the previously chosen value if it's still a valid option (e.g. re-population edge cases)
+  if (previouslySelected && [...currentSelect.options].some(o => o.value === previouslySelected)) {
+    currentSelect.value = previouslySelected;
+  }
+}
+
 async function loadMeterReading() {
   const sel = document.getElementById('mr-customer');
   sel.innerHTML = '<option value="">— Select customer —</option>';
@@ -324,6 +350,7 @@ async function loadMeterReading() {
       const opt = document.createElement('option');
       opt.value = c._id;
       opt.textContent = `${c.accountNumber} — ${c.firstName} ${c.lastName}`;
+      // New customers with no prior bill have no currentReading yet — default to 0.
       opt.dataset.prev = c.currentReading || 0;
       sel.appendChild(opt);
     });
@@ -333,11 +360,16 @@ async function loadMeterReading() {
   document.getElementById('mr-year').value = now.getFullYear();
   const due = new Date(now.getFullYear(), now.getMonth() + 1, 20);
   document.getElementById('mr-due').value = due.toISOString().split('T')[0];
+
+  // Default dropdown range before any customer is picked.
+  populateCurrentReadingOptions(0);
 }
 
 document.getElementById('mr-customer').addEventListener('change', function() {
   const opt = this.options[this.selectedIndex];
-  document.getElementById('mr-prev').value = opt.dataset.prev || 0;
+  const prevValue = opt.dataset.prev || 0;
+  document.getElementById('mr-prev').value = prevValue;
+  populateCurrentReadingOptions(prevValue);
   document.getElementById('bill-preview').style.display = 'none';
 });
 
@@ -345,7 +377,7 @@ document.getElementById('mr-calc-btn').addEventListener('click', async () => {
   const customerId = document.getElementById('mr-customer').value;
   const currentReading = parseFloat(document.getElementById('mr-current').value);
   if (!customerId) { toast('Select a customer first.', 'error'); return; }
-  if (isNaN(currentReading)) { toast('Enter current reading.', 'error'); return; }
+  if (isNaN(currentReading)) { toast('Select current reading.', 'error'); return; }
   const data = await api('/api/bills/calculate', { method:'POST', body: JSON.stringify({ customerId, currentReading }) });
   if (!data.success) { toast(data.message, 'error'); return; }
   const d = data.data;
@@ -414,7 +446,10 @@ async function loadBills() {
           <td>${fmtDate(b.dueDate)}</td>
           <td>${statusBadge(b.status)}</td>
           <td>
-            ${b.status !== 'Paid' ? `<button class="btn btn-success btn-xs" onclick="payBill('${b._id}')">Pay</button>` : ''}
+            <div class="gap-8">
+              ${b.status !== 'Paid' ? `<button class="btn btn-success btn-xs" onclick="payBill('${b._id}')">Pay</button>` : ''}
+              ${b.amountPaid === 0 ? `<button class="btn btn-danger btn-xs" onclick="deleteBill('${b._id}')">Del</button>` : ''}
+            </div>
           </td>
         </tr>
       `).join('');
@@ -423,8 +458,15 @@ async function loadBills() {
   } catch(e) {}
 }
 
-window.payBill = (billId) => {
-  openPaymentModal(billId);
+window.deleteBill = async (billId) => {
+  if (!confirm('Delete this bill? This cannot be undone.')) return;
+  const data = await api(`/api/bills/${billId}`, { method: 'DELETE' });
+  if (data.success) {
+    toast('Bill deleted.', 'info');
+    loadBills();
+  } else {
+    toast(data.message || 'Error deleting bill.', 'error');
+  }
 };
 
 // ── PAYMENTS ──────────────────────────
@@ -449,6 +491,10 @@ async function loadUnpaidBills() {
   });
 }
 
+// Shared logic for opening the Record Payment modal.
+// Always loads the dropdown + resets fields FIRST, then pre-selects a bill
+// if one was passed in — this avoids the old race condition where two
+// competing loaders could wipe out the pre-selected customer/bill.
 async function openPaymentModal(preselectBillId) {
   await loadUnpaidBills();
   document.getElementById('p-amount').value = '';
@@ -464,6 +510,10 @@ async function openPaymentModal(preselectBillId) {
   }
   openModal('payment-modal');
 }
+
+window.payBill = (billId) => {
+  openPaymentModal(billId);
+};
 
 document.getElementById('add-payment-btn').addEventListener('click', () => {
   openPaymentModal();
@@ -587,6 +637,73 @@ async function loadPayments() {
   } catch(e) {}
 }
 
+// ── SUMMARY REPORT ─────────────────────
+function defaultReportDates() {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  const to = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const toStr = d => d.toISOString().slice(0, 10);
+  return { from: toStr(from), to: toStr(to) };
+}
+
+async function loadReportsPage() {
+  const fromEl = document.getElementById('report-from');
+  const toEl = document.getElementById('report-to');
+  if (fromEl && toEl && (!fromEl.value || !toEl.value)) {
+    const defaults = defaultReportDates();
+    fromEl.value = defaults.from;
+    toEl.value = defaults.to;
+  }
+  await runReport();
+}
+
+async function runReport() {
+  const fromEl = document.getElementById('report-from');
+  const toEl = document.getElementById('report-to');
+  if (!fromEl || !toEl) return;
+  const from = fromEl.value;
+  const to = toEl.value;
+
+  try {
+    const res = await api(`/api/reports/summary?from=${from}&to=${to}`);
+    if (!res.success) { toast(res.message || 'Failed to load report', 'error'); return; }
+    renderReport(res.data);
+  } catch (e) {
+    toast('Server error while generating report.', 'error');
+  }
+}
+
+function renderReport(d) {
+  document.getElementById('rpt-bills').textContent = d.billsGenerated;
+  document.getElementById('rpt-billed-total').textContent = fmt(d.totalBilled) + ' billed';
+  document.getElementById('rpt-collected').textContent = fmt(d.totalCollected);
+  document.getElementById('rpt-payments-count').textContent = d.paymentsCount + ' payment(s)';
+  document.getElementById('rpt-outstanding').textContent = fmt(d.totalOutstanding);
+  document.getElementById('rpt-new-customers').textContent = d.newCustomers;
+
+  const statusBody = document.getElementById('rpt-bills-status-tbody');
+  statusBody.innerHTML = d.billsByStatus.length
+    ? d.billsByStatus.map(b => `<tr><td>${b.status}</td><td>${b.count}</td><td>${fmt(b.total)}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="text-muted">No bills in this period.</td></tr>';
+
+  const modeBody = document.getElementById('rpt-payments-mode-tbody');
+  const modes = Object.entries(d.paymentsByMode || {});
+  modeBody.innerHTML = modes.length
+    ? modes.map(([mode, total]) => `<tr><td>${mode}</td><td>${fmt(total)}</td></tr>`).join('')
+    : '<tr><td colspan="2" class="text-muted">No payments in this period.</td></tr>';
+
+  const brgyBody = document.getElementById('rpt-barangays-tbody');
+  brgyBody.innerHTML = d.topBarangays.length
+    ? d.topBarangays.map(b => `<tr><td>${b.name || '—'}</td><td>${b.count}</td><td>${fmt(b.total)}</td></tr>`).join('')
+    : '<tr><td colspan="3" class="text-muted">No data for this period.</td></tr>';
+}
+
+const reportRunBtn = document.getElementById('report-run-btn');
+if (reportRunBtn) reportRunBtn.addEventListener('click', runReport);
+
+const reportPrintBtn = document.getElementById('report-print-btn');
+if (reportPrintBtn) reportPrintBtn.addEventListener('click', () => window.print());
+
 // ── PAGINATION ────────────────────────
 function renderPagination(containerId, currentPage, totalPages, total, onPage) {
   const el = document.getElementById(containerId);
@@ -620,7 +737,7 @@ function initApp() {
     if (data.success) {
       showApp(data.user);
     } else {
-      showLogin();
+      showLogin(); 
     }
   } catch(e) {
     showLogin();

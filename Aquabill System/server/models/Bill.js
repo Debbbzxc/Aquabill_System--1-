@@ -45,12 +45,27 @@ const billSchema = new mongoose.Schema({
 
 billSchema.plugin(mongoosePaginate);
 
-// Auto-generate bill number
-billSchema.pre('save', async function (next) {
+// Auto-generate bill number.
+// Based on the HIGHEST existing bill number suffix (across all bills), not a
+// simple count — this avoids collisions after a bill has been deleted, the
+// same issue that was happening with Customer account numbers.
+billSchema.pre('validate', async function (next) {
   if (!this.billNumber) {
-    const count = await mongoose.model('Bill').countDocuments();
     const now = new Date();
-    this.billNumber = `BILL-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}-${String(count + 1).padStart(4,'0')}`;
+    const prefix = `BILL-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-`;
+
+    const allBills = await mongoose.model('Bill')
+      .find({ billNumber: { $exists: true, $ne: null } }, 'billNumber')
+      .lean();
+
+    let maxNum = 0;
+    allBills.forEach(b => {
+      const parts = b.billNumber.split('-');
+      const n = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    });
+
+    this.billNumber = `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
   }
   next();
 });
