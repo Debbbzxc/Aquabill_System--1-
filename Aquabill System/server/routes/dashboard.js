@@ -5,9 +5,11 @@ router.use(requireAuth);
 const Customer = require('../models/Customer');
 const Bill = require('../models/Bill');
 const Payment = require('../models/Payment');
+const checkAndApplyPenalties = require('../utils/overdueChecker');
 
 router.get('/stats', async (req, res) => {
   try {
+    await checkAndApplyPenalties();
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear  = new Date(now.getFullYear(), 0, 1);
@@ -43,7 +45,10 @@ router.get('/stats', async (req, res) => {
         { $match: { paymentDate: { $gte: startOfYear } } },
         {
           $group: {
-            _id: { month: { $month: '$paymentDate' }, year: { $year: '$paymentDate' } },
+            _id: {
+              month: { $month: { date: '$paymentDate', timezone: 'Asia/Manila' } },
+              year:  { $year:  { date: '$paymentDate', timezone: 'Asia/Manila' } }
+            },
             total: { $sum: '$amountPaid' },
             count: { $sum: 1 },
           }
@@ -58,6 +63,23 @@ router.get('/stats', async (req, res) => {
       { $group: { _id: null, total: { $sum: '$balance' } } },
     ]);
 
+    // Map monthly collections to all 12 months of the year
+    const collectionsMap = new Map();
+    monthlyCollections.forEach(m => {
+      collectionsMap.set(m._id.month, { total: m.total, count: m.count });
+    });
+
+    const fullMonthlyCollections = [];
+    for (let month = 1; month <= 12; month++) {
+      const details = collectionsMap.get(month) || { total: 0, count: 0 };
+      fullMonthlyCollections.push({
+        month,
+        year: now.getFullYear(),
+        total: details.total,
+        count: details.count,
+      });
+    }
+
     res.json({
       success: true,
       data: {
@@ -71,12 +93,7 @@ router.get('/stats', async (req, res) => {
         totalOutstanding:   outstanding[0]?.total || 0,
         year: now.getFullYear(),
         recentPayments,
-        monthlyCollections: monthlyCollections.map(m => ({
-          month: m._id.month,
-          year: m._id.year,
-          total: m.total,
-          count: m.count,
-        })),
+        monthlyCollections: fullMonthlyCollections,
       },
     });
   } catch (err) {

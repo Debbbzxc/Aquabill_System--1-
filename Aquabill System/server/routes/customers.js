@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Customer = require('../models/Customer');
+const Bill = require('../models/Bill');
+const Payment = require('../models/Payment');
 const { requireAuth } = require('../middleware/auth');
 const notifyAdmin = require('../notifyAdmin');
 router.use(requireAuth);
@@ -51,6 +53,7 @@ router.post('/', async (req, res) => {
   try {
     const customer = new Customer(req.body);
     await customer.save();
+    notifyAdmin();
     res.status(201).json({ success: true, data: customer, message: 'Customer created successfully' });
   } catch (err) {
     if (err.code === 11000) {
@@ -65,6 +68,7 @@ router.put('/:id', async (req, res) => {
   try {
     const customer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+    notifyAdmin();
     res.json({ success: true, data: customer, message: 'Customer updated successfully' });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -74,9 +78,17 @@ router.put('/:id', async (req, res) => {
 // DELETE customer
 router.delete('/:id', async (req, res) => {
   try {
-    const customer = await Customer.findByIdAndDelete(req.params.id);
+    const customerId = req.params.id;
+    const customer = await Customer.findById(customerId);
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
-    res.json({ success: true, message: 'Customer deleted successfully' });
+
+    // Cascade delete associated bills and payments
+    await Bill.deleteMany({ customer: customerId });
+    await Payment.deleteMany({ customer: customerId });
+
+    await Customer.findByIdAndDelete(customerId);
+    notifyAdmin();
+    res.json({ success: true, message: 'Customer and all associated bills and payments deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

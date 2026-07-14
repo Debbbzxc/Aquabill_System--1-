@@ -3,6 +3,7 @@
   const Customer = require('../models/Customer');
   const Bill = require('../models/Bill');
   const Payment = require('../models/Payment');
+  const checkAndApplyPenalties = require('../utils/overdueChecker');
 
   // API key check — protects both routes below
   function checkApiKey(req, res, next) {
@@ -22,6 +23,7 @@
  
   router.get('/summary', async (req, res) => {
     try {
+      await checkAndApplyPenalties();
       const [
         totalCustomers,
         totalBills,
@@ -113,49 +115,56 @@
   
   router.get('/transactions', async (req, res) => {
     try {
-      const payments = await Payment.find()
-        .select(
-          'receiptNumber customer bill amountPaid paymentMode channel paymentDate createdAt'
-        )
-        .populate(
-          'customer',
-          'firstName lastName accountNumber'
-        )
-        .populate(
-          'bill',
-          'billNumber status balance totalAmount'
-        )
-        .sort({ createdAt: -1 })
-        .limit(50)
-        .lean();
+      await checkAndApplyPenalties();
+      const [payments, bills] = await Promise.all([
+        Payment.find()
+          .populate('customer', 'firstName lastName accountNumber')
+          .populate('bill', 'billNumber status balance totalAmount')
+          .sort({ createdAt: -1 })
+          .limit(50)
+          .lean(),
+        Bill.find()
+          .populate('customer', 'firstName lastName accountNumber')
+          .sort({ createdAt: -1 })
+          .limit(50)
+          .lean()
+      ]);
 
-      const transactions = payments.map((p) => ({
-        _id: p._id,
-        type: 'payment',
+      const combined = [
+        ...payments.map(p => ({
+          _id: p._id,
+          type: 'payment',
+          receiptNumber: p.receiptNumber,
+          customerName: p.customer ? `${p.customer.firstName} ${p.customer.lastName}` : null,
+          accountNumber: p.customer?.accountNumber || null,
+          amount: p.amountPaid,
+          paymentMode: p.paymentMode,
+          channel: p.channel,
+          status: p.bill?.status || 'Unknown',
+          billNumber: p.bill?.billNumber || null,
+          balance: p.bill?.balance || 0,
+          totalAmount: p.bill?.totalAmount || 0,
+          createdAt: p.createdAt || p.paymentDate,
+        })),
+        ...bills.map(b => ({
+          _id: b._id,
+          type: 'bill',
+          receiptNumber: null,
+          customerName: b.customer ? `${b.customer.firstName} ${b.customer.lastName}` : null,
+          accountNumber: b.customer?.accountNumber || null,
+          amount: b.totalAmount,
+          paymentMode: null,
+          channel: null,
+          status: b.status,
+          billNumber: b.billNumber,
+          balance: b.balance,
+          totalAmount: b.totalAmount,
+          createdAt: b.createdAt || b.readingDate,
+        }))
+      ];
 
-        receiptNumber: p.receiptNumber,
-
-        customerName: p.customer
-          ? `${p.customer.firstName} ${p.customer.lastName}`
-          : null,
-
-        accountNumber: p.customer?.accountNumber || null,
-
-        amount: p.amountPaid,
-
-        paymentMode: p.paymentMode,
-        channel: p.channel,
-
-        // IMPORTANT:
-        // Return the BILL status, not the PAYMENT status.
-        status: p.bill?.status || 'Unknown',
-
-        billNumber: p.bill?.billNumber || null,
-        balance: p.bill?.balance || 0,
-        totalAmount: p.bill?.totalAmount || 0,
-
-        createdAt: p.createdAt || p.paymentDate,
-      }));
+      combined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const transactions = combined.slice(0, 50);
 
       res.json({
         success: true,

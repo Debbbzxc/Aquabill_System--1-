@@ -6,9 +6,11 @@ router.use(requireAuth);
 const Customer = require('../models/Customer');
 const Bill = require('../models/Bill');
 const Payment = require('../models/Payment');
+const checkAndApplyPenalties = require('../utils/overdueChecker');
 
 router.get('/summary', async (req, res) => {
   try {
+    await checkAndApplyPenalties();
     const now = new Date();
     const defaultFrom = new Date(now.getFullYear(), now.getMonth(), 1);
     const defaultTo = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);

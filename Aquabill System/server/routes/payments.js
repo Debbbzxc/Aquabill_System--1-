@@ -63,6 +63,9 @@ router.post('/', async (req, res) => {
     if (bill.status === 'Paid') return res.status(400).json({ success: false, message: 'Bill is already paid' });
 
     const paid = parseFloat(amountPaid);
+    if (isNaN(paid) || paid <= 0) {
+      return res.status(400).json({ success: false, message: 'Payment amount must be a positive number.' });
+    }
     const change = Math.max(0, paid - bill.balance);
     const actualPaid = Math.min(paid, bill.balance);
 
@@ -97,6 +100,7 @@ router.post('/', async (req, res) => {
       { path: 'bill', select: 'billNumber totalAmount billingPeriod' },
     ]);
 
+    notifyAdmin();
     res.status(201).json({ success: true, data: payment, change, message: 'Payment recorded successfully' });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

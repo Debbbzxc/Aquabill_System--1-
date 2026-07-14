@@ -5,6 +5,7 @@ router.use(requireAuth);
 const Bill = require('../models/Bill');
 const Customer = require('../models/Customer');
 const notifyAdmin = require('../notifyAdmin');
+const checkAndApplyPenalties = require('../utils/overdueChecker');
 
 // Calculate bill amount based on consumption
 function calculateBill(consumption, previousBalance = 0) {
@@ -45,6 +46,7 @@ function calculateBill(consumption, previousBalance = 0) {
 // GET all bills
 router.get('/', async (req, res) => {
   try {
+    await checkAndApplyPenalties();
     const { page = 1, limit = 10, search = '', status, month, year } = req.query;
     const query = {};
     if (status) query.status = status;
@@ -79,6 +81,7 @@ router.get('/', async (req, res) => {
 // GET single bill
 router.get('/:id', async (req, res) => {
   try {
+    await checkAndApplyPenalties();
     const bill = await Bill.findById(req.params.id).populate('customer');
     if (!bill) return res.status(404).json({ success: false, message: 'Bill not found' });
     res.json({ success: true, data: bill });
@@ -96,6 +99,9 @@ router.post('/', async (req, res) => {
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
 
     const previousReading = customer.currentReading || 0;
+    if (parseFloat(currentReading) < previousReading) {
+      return res.status(400).json({ success: false, message: 'Current reading cannot be less than previous reading.' });
+    }
     const consumption = Math.max(0, currentReading - previousReading);
     const previousBalance = customer.outstandingBalance || 0;
 
@@ -127,6 +133,7 @@ router.post('/', async (req, res) => {
     await customer.save();
 
     await bill.populate('customer');
+    notifyAdmin();
     res.status(201).json({ success: true, data: bill, message: 'Bill created successfully' });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -160,6 +167,9 @@ router.post('/calculate', async (req, res) => {
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
 
     const previousReading = customer.currentReading || 0;
+    if (parseFloat(currentReading) < previousReading) {
+      return res.status(400).json({ success: false, message: 'Current reading cannot be less than previous reading.' });
+    }
     const consumption = Math.max(0, currentReading - previousReading);
     const previousBalance = customer.outstandingBalance || 0;
     const result = calculateBill(consumption, previousBalance);
@@ -183,7 +193,26 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    const customer = await Customer.findById(bill.customer);
+    if (customer) {
+      // Find the most recent bill prior to this deleted bill
+      const latestBill = await Bill.findOne({ customer: bill.customer, _id: { $ne: bill._id } })
+        .sort({ 'billingPeriod.year': -1, 'billingPeriod.month': -1, createdAt: -1 });
+
+      if (latestBill) {
+        customer.currentReading = latestBill.currentReading;
+        customer.previousReading = latestBill.previousReading;
+        customer.outstandingBalance = latestBill.balance;
+      } else {
+        customer.currentReading = 0;
+        customer.previousReading = 0;
+        customer.outstandingBalance = 0;
+      }
+      await customer.save();
+    }
+
     await Bill.findByIdAndDelete(req.params.id);
+    notifyAdmin();
     res.json({ success: true, message: 'Bill deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

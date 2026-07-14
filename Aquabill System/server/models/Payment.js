@@ -43,9 +43,21 @@ const REF_PREFIX = { GCash: 'GC', PayMaya: 'PM' };
 
 paymentSchema.pre('save', async function (next) {
   if (!this.receiptNumber) {
-    const count = await mongoose.model('Payment').countDocuments();
     const now = new Date();
-    this.receiptNumber = `REC-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}-${String(count + 1).padStart(4,'0')}`;
+    const prefix = `REC-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}-`;
+
+    const allPayments = await mongoose.model('Payment')
+      .find({ receiptNumber: { $regex: '^REC-' } }, 'receiptNumber')
+      .lean();
+
+    let maxNum = 0;
+    allPayments.forEach(p => {
+      const parts = p.receiptNumber.split('-');
+      const n = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    });
+
+    this.receiptNumber = `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
   }
   // Auto-generate a transaction reference number for e-wallet payments if one wasn't supplied
   if (!this.referenceNumber && REF_PREFIX[this.paymentMode]) {

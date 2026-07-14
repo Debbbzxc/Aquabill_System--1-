@@ -3,6 +3,8 @@ const router = express.Router();
 const Customer = require('../models/Customer');
 const Bill = require('../models/Bill');
 const Payment = require('../models/Payment');
+const checkAndApplyPenalties = require('../utils/overdueChecker');
+const notifyAdmin = require('../notifyAdmin');
 
 // PUBLIC — customer self-service lookup.
 // No admin session required, but we still ask for two pieces of info
@@ -10,6 +12,7 @@ const Payment = require('../models/Payment');
 // just by guessing a sequential account number.
 router.get('/lookup', async (req, res) => {
   try {
+    await checkAndApplyPenalties();
     const accountNumber = (req.query.account || '').trim();
     const lastName = (req.query.lastName || '').trim();
 
@@ -134,6 +137,7 @@ router.post('/pay', async (req, res) => {
       { path: 'bill', select: 'billNumber totalAmount billingPeriod' },
     ]);
 
+    notifyAdmin();
     res.status(201).json({ success: true, data: payment, message: 'Payment successful.' });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
