@@ -161,7 +161,7 @@ const notifyAdmin = async () => {
 
     // Send payload to external admin URL
     await axios.post(`${process.env.ADMIN_URL}/api/notify`, {
-      system: "utilitybilling",
+      system: "utilitybilling2",
       summary,
       transactions,
     });

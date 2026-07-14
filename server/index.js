@@ -46,6 +46,9 @@ mongoose.connect(process.env.MONGODB_URI)
       await User.create({ username: defaultUsername, password: defaultPassword, fullName: 'Administrator', role: 'admin' });
       console.log(`👤 Default admin account created (username: ${defaultUsername}). Set DEFAULT_ADMIN_USERNAME / DEFAULT_ADMIN_PASSWORD in .env to customize, and change the password after first login.`);
     }
+    // Seed default Hotel Ogos customer if none exists
+    const { seedHotelOgosCustomer } = require('./controllers/hotelOgosController');
+    await seedHotelOgosCustomer();
   })
   .catch(err => {
     console.error('❌ MongoDB connection error:', err.message);
@@ -53,14 +56,15 @@ mongoose.connect(process.env.MONGODB_URI)
   });
 
 // API Routes
-app.use('/api/auth',      require('./routes/auth'));
-app.use('/api/customers', require('./routes/customers'));
-app.use('/api/bills',     require('./routes/bills'));
-app.use('/api/payments',  require('./routes/payments'));
-app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/portal',    require('./routes/portal'));
-app.use('/api/external',  require('./routes/external'));
-app.use('/api/reports',   require('./routes/reports'));
+app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/customers',  require('./routes/customers'));
+app.use('/api/bills',      require('./routes/bills'));
+app.use('/api/payments',   require('./routes/payments'));
+app.use('/api/dashboard',  require('./routes/dashboard'));
+app.use('/api/portal',     require('./routes/portal'));
+app.use('/api/external',   require('./routes/external'));
+app.use('/api/hotel-ogos', require('./routes/hotelOgos'));
+app.use('/api/reports',    require('./routes/reports'));
 
 // Serve frontend
 app.get('*', (req, res) => {

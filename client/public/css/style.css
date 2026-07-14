@@ -563,3 +563,348 @@ select.form-control option { background: var(--navy-700); }
   #page-reports.active table { color: black !important; }
   #page-reports.active .no-print { display: none !important; }
 }
+
+
+/* ── HOTEL OGOS INTEGRATION PAGE ── */
+.integration-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-top: 10px;
+}
+
+@media (max-width: 1024px) {
+  .integration-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-header-with-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.pulse-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--green-500);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.integration-credentials-box {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.credential-item {
+  background: var(--navy-900);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+}
+
+.credential-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--slate-400);
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.credential-value-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.credential-value-wrapper code {
+  flex-grow: 1;
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--cyan-400);
+  font-size: 13px;
+  overflow-x: auto;
+}
+
+.credential-password {
+  flex-grow: 1;
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.2);
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--cyan-400);
+  font-size: 13px;
+  outline: none;
+}
+
+.profile-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.profile-meta-label {
+  font-size: 10px;
+  color: var(--slate-500);
+}
+
+.profile-meta-val {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate-200);
+}
+
+.text-amber {
+  color: var(--amber-400) !important;
+}
+
+.api-doc-snippet {
+  margin-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 16px;
+}
+
+.api-doc-snippet h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--slate-200);
+}
+
+.api-doc-snippet p {
+  font-size: 12px;
+  color: var(--slate-400);
+  margin-bottom: 12px;
+}
+
+.code-terminal {
+  background: #060913;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  overflow: hidden;
+}
+
+.terminal-header {
+  background: #0f1424;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: var(--slate-400);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.code-terminal pre {
+  padding: 12px;
+  margin: 0;
+  overflow-x: auto;
+  font-size: 12px;
+  color: var(--cyan-300);
+}
+
+.download-doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--cyan-400);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.download-doc-link:hover {
+  color: var(--cyan-300);
+  text-decoration: underline;
+}
+
+/* Simulator Panel Styling */
+.simulator-card {
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(59, 130, 246, 0.05) !important;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.simulator-bar {
+  background: #111b33;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.simulator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.simulator-dot.red { background: var(--red-500); }
+.simulator-dot.yellow { background: var(--amber-400); }
+.simulator-dot.green { background: var(--green-500); }
+
+.simulator-title {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--slate-400);
+  margin-left: 8px;
+}
+
+.simulator-body {
+  padding: 20px;
+}
+
+.simulator-hero {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%);
+  border: 1px dashed rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+.simulator-hero h4 {
+  font-size: 15px;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+
+.simulator-hero p {
+  font-size: 12px;
+  color: var(--slate-300);
+  line-height: 1.4;
+}
+
+.simulator-section {
+  background: rgba(13, 22, 41, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.simulator-section h5 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--slate-300);
+}
+
+.simulator-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.simulator-section-header h5 {
+  margin-bottom: 0;
+}
+
+.sim-bills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sim-bill-item {
+  background: var(--navy-800);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+}
+
+.sim-bill-item:hover {
+  border-color: rgba(6, 182, 212, 0.4);
+  background: var(--navy-700);
+}
+
+.sim-bill-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sim-bill-number {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-100);
+}
+
+.sim-bill-period {
+  font-size: 11px;
+  color: var(--slate-400);
+}
+
+.sim-bill-amt-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.sim-bill-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.simulator-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-block {
+  width: 100%;
+  justify-content: center;
+  padding: 10px;
+  font-weight: 600;
+}
+
+.sim-empty-state {
+  text-align: center;
+  padding: 20px;
+  color: var(--slate-500);
+  font-size: 12px;
+}

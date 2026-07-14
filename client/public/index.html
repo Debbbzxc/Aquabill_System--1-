@@ -95,6 +95,11 @@
       <button class="nav-item" data-page="reports">
         <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h10l4 4v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M15 3v4h4"/><path d="M8 12h8M8 16h8M8 8h3"/></svg></span> Summary Report
       </button>
+
+      <div class="nav-section-label">Integrations</div>
+      <button class="nav-item" data-page="integration">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v1"/><path d="M18 8h4a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-4"/><circle cx="8" cy="12" r="2"/></svg></span> Hotel Ogos
+      </button>
     </nav>
 
     <div class="sidebar-user">
@@ -472,6 +477,138 @@
                 <thead><tr><th>Barangay</th><th># Payments</th><th>Total Collected</th></tr></thead>
                 <tbody id="rpt-barangays-tbody"><tr><td colspan="3"><div class="loading">Loading…</div></td></tr></tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── HOTEL OGOS INTEGRATION ── -->
+      <div class="page" id="page-integration">
+        <div class="integration-layout">
+          <!-- Left Column: Details & Key info -->
+          <div class="integration-details-panel">
+            <div class="card">
+              <div class="card-header-with-status">
+                <h3 class="card-title">Integration Credentials</h3>
+                <span class="badge badge-green" style="display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="pulse-dot"></span> Connected
+                </span>
+              </div>
+              <div class="integration-credentials-box">
+                <div class="credential-item">
+                  <div class="credential-label">Target API Endpoint</div>
+                  <div class="credential-value-wrapper">
+                    <code id="int-endpoint-url">/api/hotel-ogos</code>
+                    <button class="btn btn-sm btn-icon copy-btn" data-copy="int-endpoint-url" title="Copy endpoint">📋</button>
+                  </div>
+                </div>
+                
+                <div class="credential-item">
+                  <div class="credential-label">API key (x-api-key)</div>
+                  <div class="credential-value-wrapper">
+                    <input type="password" id="int-api-key" class="credential-password" value="apikey1234" readonly />
+                    <button class="btn btn-sm btn-icon toggle-password-btn" id="int-toggle-key-btn" title="Toggle visibility">👁️</button>
+                    <button class="btn btn-sm btn-icon copy-btn" data-copy="int-api-key" title="Copy key">📋</button>
+                  </div>
+                </div>
+
+                <div class="credential-item">
+                  <div class="credential-label">Customer Profile (Seeded)</div>
+                  <div class="profile-details-grid">
+                    <div>
+                      <div class="profile-meta-label">Name</div>
+                      <div class="profile-meta-val" id="int-cust-name">Hotel Ogos</div>
+                    </div>
+                    <div>
+                      <div class="profile-meta-label">Account No.</div>
+                      <div class="profile-meta-val" id="int-cust-account">—</div>
+                    </div>
+                    <div>
+                      <div class="profile-meta-label">Meter No.</div>
+                      <div class="profile-meta-val" id="int-cust-meter">—</div>
+                    </div>
+                    <div>
+                      <div class="profile-meta-label">Outstanding Balance</div>
+                      <div class="profile-meta-val text-amber" id="int-cust-balance">₱0.00</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="api-doc-snippet">
+                <h4>API Documentation Guide</h4>
+                <p>To integrate your system, send HTTP requests to this server with the header <code>x-api-key: apikey1234</code>.</p>
+                <div class="code-terminal">
+                  <div class="terminal-header">
+                    <span>cURL Example — Fetch Unpaid Bills</span>
+                  </div>
+                  <pre><code>curl -H "x-api-key: apikey1234" \
+  http://localhost:3000/api/hotel-ogos/bills?status=Unpaid</code></pre>
+                </div>
+                <div style="margin-top: 15px;">
+                  <a href="/INTEGRATION.md" target="_blank" class="download-doc-link">
+                    <svg class="inline-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    View Integration Instructions (INTEGRATION.md)
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Interactive Simulator -->
+          <div class="integration-simulator-panel">
+            <div class="card simulator-card">
+              <div class="simulator-bar">
+                <span class="simulator-dot red"></span>
+                <span class="simulator-dot yellow"></span>
+                <span class="simulator-dot green"></span>
+                <span class="simulator-title">Hotel Ogos Reservation System Simulator</span>
+              </div>
+              <div class="simulator-body">
+                <div class="simulator-hero">
+                  <h4>🏨 Hotel Ogos Reservation System</h4>
+                  <p>This panel simulates how the Hotel Ogos system queries Aquabill API and makes a payment.</p>
+                </div>
+                
+                <div class="simulator-section">
+                  <div class="simulator-section-header">
+                    <h5>Outstanding Water Bills</h5>
+                    <button class="btn btn-sm btn-secondary" id="sim-refresh-btn">🔄 Refresh Bills</button>
+                  </div>
+                  
+                  <div id="sim-bills-container" class="sim-bills-list">
+                    <div class="loading">Fetching bills from API...</div>
+                  </div>
+                </div>
+
+                <div class="simulator-section" id="sim-pay-form-wrapper" style="display:none;">
+                  <h5>Simulate API Payment Request</h5>
+                  <div class="simulator-form">
+                    <input type="hidden" id="sim-pay-bill-id" />
+                    <div class="sim-form-row">
+                      <div class="form-group">
+                        <label class="form-label">Paying Bill</label>
+                        <input type="text" id="sim-pay-bill-num" class="form-control" readonly />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Total Outstanding</label>
+                        <input type="text" id="sim-pay-bill-bal" class="form-control" readonly />
+                      </div>
+                    </div>
+                    <div class="sim-form-row">
+                      <div class="form-group">
+                        <label class="form-label">Amount to Pay (₱)</label>
+                        <input type="number" id="sim-pay-amount" class="form-control" step="0.01" />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Hotel Reference No.</label>
+                        <input type="text" id="sim-pay-ref" class="form-control" placeholder="e.g. HO-PAY-998877" />
+                      </div>
+                    </div>
+                    <button class="btn btn-primary btn-block" id="sim-pay-submit-btn">Send POST /api/hotel-ogos/pay</button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
