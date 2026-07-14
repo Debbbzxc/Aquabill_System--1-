@@ -116,7 +116,7 @@ router.post('/', async (req, res) => {
     const consumption = Math.max(0, currentReading - previousReading);
     const previousBalance = customer.outstandingBalance || 0;
 
-    const { breakdown, waterCharge, environmentFee, maintenanceFee, totalAmount } = calculateBill(consumption, previousBalance);
+    const { breakdown, waterCharge, environmentFee, maintenanceFee, totalAmount } = calculateBill(consumption, 0);
 
     const bill = new Bill({
       customer: customerId,
@@ -212,7 +212,7 @@ router.post('/calculate', async (req, res) => {
     }
     const consumption = Math.max(0, currentReading - previousReading);
     const previousBalance = customer.outstandingBalance || 0;
-    const result = calculateBill(consumption, previousBalance);
+    const result = calculateBill(consumption, 0);
 
     res.json({ success: true, data: { ...result, consumption, previousReading, previousBalance } });
   } catch (err) {
