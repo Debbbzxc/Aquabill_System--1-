@@ -1,6 +1,4 @@
-/* ═══════════════════════════════════
-   AquaBill — Customer Portal JS
-   ═══════════════════════════════════ */
+/* AquaBill — Customer Portal JS */
 
 function fmt(n) { return '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }); }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' }) : '—'; }
@@ -109,9 +107,7 @@ function renderResult(data) {
   }
 }
 
-/* ═══════════════════════════════════
-   PAY ONLINE (GCash / PayMaya)
-   ═══════════════════════════════════ */
+/* PAY ONLINE (GCash / PayMaya)*/
 let selectedMethod = null;
 let payingBillId = null;
 

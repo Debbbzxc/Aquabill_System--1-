@@ -1,6 +1,4 @@
-/* ═══════════════════════════════════
-   AquaBill — Main App JS
-   ═══════════════════════════════════ */
+/* AquaBill — Main App JS */
 
 const API = '';
 let currentUser = null;
@@ -8,7 +6,7 @@ let customersPage = 1;
 let billsPage = 1;
 let paymentsPage = 1;
 
-// ── UTILS ──────────────────────────────
+// ── UTILS ──
 function fmt(n) { return '₱' + parseFloat(n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 }); }
 function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-PH', { year:'numeric', month:'short', day:'numeric' }) : '—'; }
 function months() { return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; }
@@ -51,7 +49,7 @@ function statusBadge(status) {
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// ── AUTH ───────────────────────────────
+// ── AUTH ──
 function showLogin() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-shell').classList.add('hidden');
@@ -100,7 +98,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   toast('Signed out successfully.', 'info');
 });
 
-// ── NAV ────────────────────────────────
+// ── NAV ──
 const pageTitles = {
   dashboard: 'Dashboard',
   customers: 'Customers',
@@ -139,7 +137,7 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
   ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
 });
 
-// ── DASHBOARD ─────────────────────────
+// ── DASHBOARD ──
 function setHeroGreeting() {
   const h = new Date().getHours();
   const greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
@@ -208,7 +206,7 @@ async function loadDashboard() {
   } catch(e) {}
 }
 
-// ── CUSTOMERS ─────────────────────────
+// ── CUSTOMERS ──
 let customerSearchTimer;
 document.getElementById('customer-search').addEventListener('input', () => {
   clearTimeout(customerSearchTimer);
@@ -316,7 +314,7 @@ window.deleteCustomer = async (id, name) => {
   else toast(data.message, 'error');
 };
 
-// ── METER READING ─────────────────────
+// ── METER READING ──
 // Builds the Current Reading dropdown as: previous reading + 0 up to +100.
 // This keeps entries realistic (meters only count up) while still letting
 // staff pick whatever value the physical meter shows.
@@ -412,7 +410,7 @@ document.getElementById('mr-submit-btn').addEventListener('click', async () => {
   }
 });
 
-// ── BILLS ─────────────────────────────
+// ── BILLS ──
 let billsSearchTimer;
 document.getElementById('bills-search').addEventListener('input', () => {
   clearTimeout(billsSearchTimer);
@@ -469,7 +467,7 @@ window.deleteBill = async (billId) => {
   }
 };
 
-// ── PAYMENTS ──────────────────────────
+// ── PAYMENTS ──
 let paymentsSearchTimer;
 document.getElementById('payments-search').addEventListener('input', () => {
   clearTimeout(paymentsSearchTimer);
@@ -547,7 +545,7 @@ document.getElementById('save-payment-btn').addEventListener('click', async () =
   }
 });
 
-// ── RECEIPTS ──────────────────────────
+// ── RECEIPTS ──
 function receiptHTML(p) {
   const mo = fullMonths();
   const period = p.bill?.billingPeriod ? `${mo[(p.bill.billingPeriod.month||1)-1]} ${p.bill.billingPeriod.year}` : '—';
@@ -603,8 +601,6 @@ document.getElementById('print-receipt-btn').addEventListener('click', () => {
   window.print();
 });
 
-
-
 async function loadPayments() {
   const search = document.getElementById('payments-search').value;
   const tbody = document.getElementById('payments-tbody');
@@ -637,7 +633,7 @@ async function loadPayments() {
   } catch(e) {}
 }
 
-// ── SUMMARY REPORT ─────────────────────
+// ── SUMMARY REPORT ──
 function defaultReportDates() {
   const now = new Date();
   const from = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -704,7 +700,7 @@ if (reportRunBtn) reportRunBtn.addEventListener('click', runReport);
 const reportPrintBtn = document.getElementById('report-print-btn');
 if (reportPrintBtn) reportPrintBtn.addEventListener('click', () => window.print());
 
-// ── PAGINATION ────────────────────────
+// ── PAGINATION ──
 function renderPagination(containerId, currentPage, totalPages, total, onPage) {
   const el = document.getElementById(containerId);
   const start = (currentPage-1)*10+1;
@@ -723,14 +719,14 @@ function renderPagination(containerId, currentPage, totalPages, total, onPage) {
   `;
 }
 
-// ── INIT ──────────────────────────────
+// ── INIT ──
 function initApp() {
   const now = new Date();
   document.getElementById('topbar-date').textContent = now.toLocaleDateString('en-PH', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
   loadDashboard();
 }
 
-// ── BOOTSTRAP ─────────────────────────
+// ── BOOTSTRAP ──
 (async () => {
   try {
     const data = await api('/api/auth/me');
