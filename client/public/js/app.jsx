@@ -218,18 +218,22 @@ async function loadCustomers() {
   const search = document.getElementById('customer-search').value;
   const status = document.getElementById('customer-status-filter').value;
   const tbody = document.getElementById('customers-tbody');
-  tbody.innerHTML = '<tr><td colspan="8"><div class="loading">Loading…</div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9"><div class="loading">Loading…</div></td></tr>';
   try {
     const data = await api(`/api/customers?page=${customersPage}&limit=10&search=${encodeURIComponent(search)}&status=${status}`);
     if (!data.success) return;
     const { docs, totalPages, totalDocs, page } = data.data;
     if (!docs.length) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><path d="M15.5 8.3a3.2 3.2 0 1 1 3 4.3"/><path d="M15 13.6c2.6.4 4.5 2.4 4.5 5.2"/></svg></div><p>No customers found.</p></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><path d="M15.5 8.3a3.2 3.2 0 1 1 3 4.3"/><path d="M15 13.6c2.6.4 4.5 2.4 4.5 5.2"/></svg></div><p>No customers found.</p></div></td></tr>`;
     } else {
       tbody.innerHTML = docs.map(c => `
         <tr>
           <td><strong>${c.accountNumber}</strong></td>
           <td>${c.firstName} ${c.lastName}</td>
+          <td>
+            ${c.contactNumber || '—'}<br>
+            <span class="text-muted" style="font-size:11.5px;">${c.email || '—'}</span>
+          </td>
           <td>${c.meterNumber}</td>
           <td>${c.address}<br><span class="text-muted">${c.barangay}</span></td>
           <td>${statusBadge(c.connectionType)}</td>
