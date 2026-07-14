@@ -152,6 +152,7 @@ router.put('/:id/overdue', async (req, res) => {
       bill.balance       = bill.totalAmount - bill.amountPaid;
       bill.status        = 'Overdue';
       await bill.save();
+      notifyAdmin();
     }
     res.json({ success: true, data: bill });
   } catch (err) {

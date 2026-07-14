@@ -1,5 +1,6 @@
 const Bill = require('../models/Bill');
 const Customer = require('../models/Customer');
+const notifyAdmin = require('../notifyAdmin');
 
 async function checkAndApplyPenalties() {
   try {
@@ -9,6 +10,8 @@ async function checkAndApplyPenalties() {
       status: { $in: ['Unpaid', 'Partial'] },
       dueDate: { $lt: now }
     });
+
+    if (overdueBills.length === 0) return;
 
     for (const bill of overdueBills) {
       const penalty = bill.totalAmount * 0.02;
@@ -25,6 +28,8 @@ async function checkAndApplyPenalties() {
         await customer.save();
       }
     }
+
+    notifyAdmin();
   } catch (err) {
     console.error('Error applying overdue penalties:', err.message);
   }
