@@ -41,6 +41,18 @@ async function getHotelOgosCustomer(req, res) {
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Hotel Ogos customer record not found.' });
     }
+
+    // Recalculate outstandingBalance dynamically
+    const unpaidBills = await Bill.find({
+      customer: customer._id,
+      status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+    });
+    const totalBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
+    if (customer.outstandingBalance !== totalBalance) {
+      customer.outstandingBalance = totalBalance;
+      await Customer.findByIdAndUpdate(customer._id, { outstandingBalance: totalBalance });
+    }
+
     res.json({ success: true, data: customer });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -121,8 +133,12 @@ async function payHotelOgosBill(req, res) {
     }
     await bill.save();
 
-    // Update Customer
-    customer.outstandingBalance = Math.max(0, customer.outstandingBalance - actualPaid);
+    // Update Customer outstanding balance by summing up remaining unpaid/partial bills
+    const unpaidBills = await Bill.find({
+      customer: customer._id,
+      status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+    });
+    customer.outstandingBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
     await customer.save();
 
     // Trigger Admin notification for central system dashboard

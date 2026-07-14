@@ -106,7 +106,6 @@ const pageTitles = {
   bills: 'Bills',
   payments: 'Payments',
   reports: 'Summary Report',
-  integration: 'Hotel Ogos Integration',
 };
 
 document.querySelectorAll('.nav-item').forEach(btn => {
@@ -128,7 +127,6 @@ function loadPage(page) {
   if (page === 'payments') loadPayments();
   if (page === 'meter-reading') loadMeterReading();
   if (page === 'reports') loadReportsPage();
-  if (page === 'integration') loadIntegration();
 }
 
 // Close modal buttons
@@ -341,6 +339,18 @@ function populateCurrentReadingOptions(prevValue) {
   }
 }
 
+function updateDueDate() {
+  const monthVal = parseInt(document.getElementById('mr-month').value);
+  const yearVal = parseInt(document.getElementById('mr-year').value);
+  if (!isNaN(monthVal) && !isNaN(yearVal)) {
+    const due = new Date(yearVal, monthVal, 19);
+    const yyyy = due.getFullYear();
+    const mm = String(due.getMonth() + 1).padStart(2, '0');
+    const dd = String(due.getDate()).padStart(2, '0');
+    document.getElementById('mr-due').value = `${yyyy}-${mm}-${dd}`;
+  }
+}
+
 async function loadMeterReading() {
   const sel = document.getElementById('mr-customer');
   sel.innerHTML = '<option value="">— Select customer —</option>';
@@ -358,8 +368,7 @@ async function loadMeterReading() {
   const now = new Date();
   document.getElementById('mr-month').value = now.getMonth() + 1;
   document.getElementById('mr-year').value = now.getFullYear();
-  const due = new Date(now.getFullYear(), now.getMonth() + 1, 20);
-  document.getElementById('mr-due').value = due.toISOString().split('T')[0];
+  updateDueDate();
 
   // Default dropdown range before any customer is picked.
   populateCurrentReadingOptions(0);
@@ -372,6 +381,10 @@ document.getElementById('mr-customer').addEventListener('change', function() {
   populateCurrentReadingOptions(prevValue);
   document.getElementById('bill-preview').style.display = 'none';
 });
+
+document.getElementById('mr-month').addEventListener('change', updateDueDate);
+document.getElementById('mr-year').addEventListener('input', updateDueDate);
+document.getElementById('mr-year').addEventListener('change', updateDueDate);
 
 document.getElementById('mr-calc-btn').addEventListener('click', async () => {
   const customerId = document.getElementById('mr-customer').value;
@@ -721,192 +734,6 @@ function renderPagination(containerId, currentPage, totalPages, total, onPage) {
   `;
 }
 
-// ── HOTEL OGOS INTEGRATION ──
-let hotelOgosCustomer = null;
-
-async function loadIntegration() {
-  const billsContainer = document.getElementById('sim-bills-container');
-  const payFormWrapper = document.getElementById('sim-pay-form-wrapper');
-  billsContainer.innerHTML = '<div class="loading">Loading integration details...</div>';
-  payFormWrapper.style.display = 'none';
-
-  try {
-    const custData = await api('/api/hotel-ogos/customer', {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': 'apikey1234'
-      }
-    });
-
-    if (!custData.success) {
-      toast('Failed to load Hotel Ogos customer details.', 'error');
-      return;
-    }
-
-    hotelOgosCustomer = custData.data;
-
-    // Render customer info
-    document.getElementById('int-cust-account').textContent = hotelOgosCustomer.accountNumber;
-    document.getElementById('int-cust-meter').textContent = hotelOgosCustomer.meterNumber;
-    document.getElementById('int-cust-balance').textContent = fmt(hotelOgosCustomer.outstandingBalance);
-
-    await loadIntegrationBills();
-
-  } catch (err) {
-    console.error(err);
-    toast('Error connecting to integration API.', 'error');
-  }
-}
-
-async function loadIntegrationBills() {
-  const billsContainer = document.getElementById('sim-bills-container');
-  const payFormWrapper = document.getElementById('sim-pay-form-wrapper');
-  billsContainer.innerHTML = '<div class="loading">Fetching outstanding bills...</div>';
-  
-  try {
-    const billsData = await api('/api/hotel-ogos/bills?status=Unpaid', {
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': 'apikey1234'
-      }
-    });
-
-    if (!billsData.success) {
-      billsContainer.innerHTML = '<div class="sim-empty-state">Failed to fetch bills from API.</div>';
-      return;
-    }
-
-    const bills = billsData.data || [];
-    if (bills.length === 0) {
-      billsContainer.innerHTML = '<div class="sim-empty-state">No outstanding water bills. All paid! 🎉</div>';
-      payFormWrapper.style.display = 'none';
-      return;
-    }
-
-    billsContainer.innerHTML = bills.map(b => `
-      <div class="sim-bill-item" onclick="selectSimBill('${b._id}', '${b.billNumber}', ${b.balance})">
-        <div class="sim-bill-info">
-          <div class="sim-bill-number">${b.billNumber}</div>
-          <div class="sim-bill-period">Period: ${fullMonths()[b.billingPeriod.month - 1]} ${b.billingPeriod.year}</div>
-          <div class="sim-bill-period">Due: ${fmtDate(b.dueDate)}</div>
-        </div>
-        <div class="sim-bill-amt-box">
-          <div class="sim-bill-amount">${fmt(b.balance)}</div>
-          <span class="badge badge-red">${b.status}</span>
-        </div>
-      </div>
-    `).join('');
-
-  } catch (err) {
-    billsContainer.innerHTML = '<div class="sim-empty-state">API Error occurred while fetching bills.</div>';
-  }
-}
-
-window.selectSimBill = function(id, number, balance) {
-  document.getElementById('sim-pay-bill-id').value = id;
-  document.getElementById('sim-pay-bill-num').value = number;
-  document.getElementById('sim-pay-bill-bal').value = fmt(balance);
-  document.getElementById('sim-pay-amount').value = balance.toFixed(2);
-  document.getElementById('sim-pay-amount').max = balance;
-  document.getElementById('sim-pay-ref').value = 'HO-PAY-' + Date.now().toString().slice(-6);
-  document.getElementById('sim-pay-form-wrapper').style.display = 'block';
-  document.getElementById('sim-pay-form-wrapper').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-};
-
-// Copy helper
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(() => {
-    toast('Copied to clipboard!', 'success');
-  }).catch(() => {
-    toast('Failed to copy.', 'error');
-  });
-}
-
-// Setup Integration Page Listeners
-document.addEventListener('DOMContentLoaded', () => {
-  // Toggle password helper
-  const toggleBtn = document.getElementById('int-toggle-key-btn');
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      const input = document.getElementById('int-api-key');
-      if (input.type === 'password') {
-        input.type = 'text';
-        toggleBtn.textContent = '🙈';
-      } else {
-        input.type = 'password';
-        toggleBtn.textContent = '👁️';
-      }
-    });
-  }
-
-  // Copy button listeners
-  document.body.addEventListener('click', e => {
-    const copyBtn = e.target.closest('.copy-btn');
-    if (copyBtn) {
-      const targetId = copyBtn.dataset.copy;
-      const el = document.getElementById(targetId);
-      if (el) {
-        const val = el.value || el.textContent;
-        copyToClipboard(val);
-      }
-    }
-  });
-
-  // Refresh button listener
-  const refreshBtn = document.getElementById('sim-refresh-btn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', async () => {
-      await loadIntegrationBills();
-      toast('Bills list updated.', 'info');
-    });
-  }
-
-  // Submit payment listener
-  const paySubmitBtn = document.getElementById('sim-pay-submit-btn');
-  if (paySubmitBtn) {
-    paySubmitBtn.addEventListener('click', async () => {
-      const billId = document.getElementById('sim-pay-bill-id').value;
-      const billNum = document.getElementById('sim-pay-bill-num').value;
-      const amountPaid = parseFloat(document.getElementById('sim-pay-amount').value);
-      const referenceNumber = document.getElementById('sim-pay-ref').value.trim();
-
-      if (!billId || isNaN(amountPaid) || amountPaid <= 0) {
-        toast('Please select a bill and enter a valid amount.', 'error');
-        return;
-      }
-
-      paySubmitBtn.textContent = 'Sending POST request...';
-      paySubmitBtn.disabled = true;
-
-      try {
-        const res = await api('/api/hotel-ogos/pay', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': 'apikey1234'
-          },
-          body: JSON.stringify({
-            billId,
-            amountPaid,
-            referenceNumber
-          })
-        });
-
-        if (res.success) {
-          toast(`Payment of ${fmt(amountPaid)} recorded for ${billNum}!`, 'success');
-          await loadIntegration();
-        } else {
-          toast(res.message || 'Payment failed.', 'error');
-        }
-      } catch (err) {
-        toast('Failed to record payment.', 'error');
-      } finally {
-        paySubmitBtn.textContent = 'Send POST /api/hotel-ogos/pay';
-        paySubmitBtn.disabled = false;
-      }
-    });
-  }
-});
 
 // ── INIT ──
 function initApp() {

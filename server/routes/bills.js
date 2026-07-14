@@ -98,6 +98,17 @@ router.post('/', async (req, res) => {
     const customer = await Customer.findById(customerId);
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
 
+    // Ensure customer outstandingBalance is up-to-date in database
+    const unpaidBills = await Bill.find({
+      customer: customer._id,
+      status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+    });
+    const calculatedBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
+    if (customer.outstandingBalance !== calculatedBalance) {
+      customer.outstandingBalance = calculatedBalance;
+      await customer.save();
+    }
+
     const previousReading = customer.currentReading || 0;
     if (parseFloat(currentReading) < previousReading) {
       return res.status(400).json({ success: false, message: 'Current reading cannot be less than previous reading.' });
@@ -129,7 +140,13 @@ router.post('/', async (req, res) => {
     // Update customer reading
     customer.previousReading = previousReading;
     customer.currentReading  = currentReading;
-    customer.outstandingBalance = totalAmount;
+    
+    // Recalculate customer's outstanding balance including the newly created bill
+    const updatedUnpaidBills = await Bill.find({
+      customer: customer._id,
+      status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+    });
+    customer.outstandingBalance = updatedUnpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
     await customer.save();
 
     await bill.populate('customer');
@@ -152,6 +169,17 @@ router.put('/:id/overdue', async (req, res) => {
       bill.balance       = bill.totalAmount - bill.amountPaid;
       bill.status        = 'Overdue';
       await bill.save();
+
+      const customer = await Customer.findById(bill.customer);
+      if (customer) {
+        const unpaidBills = await Bill.find({
+          customer: customer._id,
+          status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+        });
+        customer.outstandingBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
+        await customer.save();
+      }
+
       notifyAdmin();
     }
     res.json({ success: true, data: bill });
@@ -166,6 +194,17 @@ router.post('/calculate', async (req, res) => {
     const { customerId, currentReading } = req.body;
     const customer = await Customer.findById(customerId);
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+
+    // Ensure customer outstandingBalance is up-to-date in database
+    const unpaidBills = await Bill.find({
+      customer: customer._id,
+      status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+    });
+    const calculatedBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
+    if (customer.outstandingBalance !== calculatedBalance) {
+      customer.outstandingBalance = calculatedBalance;
+      await customer.save();
+    }
 
     const previousReading = customer.currentReading || 0;
     if (parseFloat(currentReading) < previousReading) {
@@ -194,6 +233,8 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    await Bill.findByIdAndDelete(req.params.id);
+
     const customer = await Customer.findById(bill.customer);
     if (customer) {
       // Find the most recent bill prior to this deleted bill
@@ -203,16 +244,20 @@ router.delete('/:id', async (req, res) => {
       if (latestBill) {
         customer.currentReading = latestBill.currentReading;
         customer.previousReading = latestBill.previousReading;
-        customer.outstandingBalance = latestBill.balance;
       } else {
         customer.currentReading = 0;
         customer.previousReading = 0;
-        customer.outstandingBalance = 0;
       }
+
+      // Sum of remaining unpaid/partial bills
+      const unpaidBills = await Bill.find({
+        customer: customer._id,
+        status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+      });
+      customer.outstandingBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
       await customer.save();
     }
 
-    await Bill.findByIdAndDelete(req.params.id);
     notifyAdmin();
     res.json({ success: true, message: 'Bill deleted successfully' });
   } catch (err) {

@@ -90,10 +90,16 @@ router.post('/', async (req, res) => {
     if (bill.status === 'Paid') bill.paidDate = new Date();
     await bill.save();
 
-    // Update customer balance
+    // Update customer balance by summing up remaining unpaid/partial bills
     const customer = await Customer.findById(bill.customer._id);
-    customer.outstandingBalance = Math.max(0, customer.outstandingBalance - actualPaid);
-    await customer.save();
+    if (customer) {
+      const unpaidBills = await Bill.find({
+        customer: customer._id,
+        status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+      });
+      customer.outstandingBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
+      await customer.save();
+    }
 
     await payment.populate([
       { path: 'customer', select: 'firstName lastName accountNumber' },

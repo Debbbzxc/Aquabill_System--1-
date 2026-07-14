@@ -21,10 +21,14 @@ async function checkAndApplyPenalties() {
       bill.status = 'Overdue';
       await bill.save();
 
-      // Update customer outstanding balance
+      // Update customer outstanding balance by summing up remaining unpaid/partial bills
       const customer = await Customer.findById(bill.customer);
       if (customer) {
-        customer.outstandingBalance += penalty;
+        const unpaidBills = await Bill.find({
+          customer: customer._id,
+          status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+        });
+        customer.outstandingBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
         await customer.save();
       }
     }

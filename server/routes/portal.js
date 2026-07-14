@@ -29,6 +29,17 @@ router.get('/lookup', async (req, res) => {
       return res.status(404).json({ success: false, message: 'No account found matching that account number and last name.' });
     }
 
+    // Ensure customer outstandingBalance is up-to-date in database
+    const unpaidBillsList = await Bill.find({
+      customer: customer._id,
+      status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+    });
+    const calculatedBalance = unpaidBillsList.reduce((sum, b) => sum + (b.balance || 0), 0);
+    if (customer.outstandingBalance !== calculatedBalance) {
+      customer.outstandingBalance = calculatedBalance;
+      await customer.save();
+    }
+
     const bills = await Bill.find({ customer: customer._id }).sort({ createdAt: -1 }).limit(24);
     const payments = await Payment.find({ customer: customer._id })
       .sort({ paymentDate: -1 })
@@ -129,7 +140,12 @@ router.post('/pay', async (req, res) => {
     if (bill.status === 'Paid') bill.paidDate = new Date();
     await bill.save();
 
-    customer.outstandingBalance = Math.max(0, customer.outstandingBalance - actualPaid);
+    // Update customer outstanding balance by summing up remaining unpaid/partial bills
+    const unpaidBills = await Bill.find({
+      customer: customer._id,
+      status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+    });
+    customer.outstandingBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
     await customer.save();
 
     await payment.populate([

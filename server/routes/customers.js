@@ -31,6 +31,21 @@ router.get('/', async (req, res) => {
     };
 
     const result = await Customer.paginate(query, options);
+    
+    // Self-healing: Recalculate outstandingBalance for all returned customers
+    for (let i = 0; i < result.docs.length; i++) {
+      const c = result.docs[i];
+      const unpaidBills = await Bill.find({
+        customer: c._id,
+        status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+      });
+      const totalBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
+      if (c.outstandingBalance !== totalBalance) {
+        c.outstandingBalance = totalBalance;
+        await Customer.findByIdAndUpdate(c._id, { outstandingBalance: totalBalance });
+      }
+    }
+
     res.json({ success: true, data: result });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -42,6 +57,18 @@ router.get('/:id', async (req, res) => {
   try {
     const customer = await Customer.findById(req.params.id);
     if (!customer) return res.status(404).json({ success: false, message: 'Customer not found' });
+    
+    // Recalculate outstandingBalance
+    const unpaidBills = await Bill.find({
+      customer: customer._id,
+      status: { $in: ['Unpaid', 'Partial', 'Overdue'] }
+    });
+    const totalBalance = unpaidBills.reduce((sum, b) => sum + (b.balance || 0), 0);
+    if (customer.outstandingBalance !== totalBalance) {
+      customer.outstandingBalance = totalBalance;
+      await Customer.findByIdAndUpdate(customer._id, { outstandingBalance: totalBalance });
+    }
+
     res.json({ success: true, data: customer });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
