@@ -22,15 +22,29 @@ function toast(msg, type = 'success') {
 }
 
 async function api(path, options = {}) {
-  const res = await fetch(API + path, {
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    ...options,
-  });
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(API + path, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      ...options,
+    });
+  } catch (networkErr) {
+    throw new Error('Network error — could not reach the server.');
+  }
   if (res.status === 401) {
     showLogin();
     throw new Error('Session expired');
+  }
+  let data;
+  try {
+    data = await res.json();
+  } catch (parseErr) {
+    throw new Error(`Server returned an invalid response (HTTP ${res.status}).`);
+  }
+  if (!res.ok && data && data.success === undefined) {
+    // Server errored without the usual { success, message } shape
+    throw new Error(data.message || `Request failed (HTTP ${res.status}).`);
   }
   return data;
 }
@@ -165,7 +179,7 @@ async function loadDashboard() {
   setHeroGreeting();
   try {
     const data = await api('/api/dashboard/stats');
-    if (!data.success) return;
+    if (!data.success) { toast(data.message || 'Could not load dashboard.', 'error'); return; }
     const s = data.data;
     document.getElementById('stat-customers').textContent = s.totalCustomers ?? '—';
     document.getElementById('stat-active').textContent = `${s.activeCustomers ?? 0} active`;
@@ -203,7 +217,9 @@ async function loadDashboard() {
         <div class="payment-item-amt">${fmt(p.amountPaid)}</div>
       </div>
     `).join('');
-  } catch(e) {}
+  } catch(e) {
+    toast(e.message || 'Could not load dashboard.', 'error');
+  }
 }
 
 // ── CUSTOMERS ──
@@ -214,17 +230,31 @@ document.getElementById('customer-search').addEventListener('input', () => {
 });
 document.getElementById('customer-status-filter').addEventListener('change', () => { customersPage = 1; loadCustomers(); });
 
+function customersErrorRow(message) {
+  return `<tr><td colspan="9">
+    <div class="empty-state">
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg></div>
+      <p>${message}</p>
+      <button class="btn btn-secondary btn-xs" onclick="loadCustomers()" style="margin-top:8px;">Retry</button>
+    </div>
+  </td></tr>`;
+}
+
 async function loadCustomers() {
   const search = document.getElementById('customer-search').value;
   const status = document.getElementById('customer-status-filter').value;
   const tbody = document.getElementById('customers-tbody');
-  tbody.innerHTML = '<tr><td colspan="8"><div class="loading">Loading…</div></td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9"><div class="loading">Loading…</div></td></tr>';
   try {
     const data = await api(`/api/customers?page=${customersPage}&limit=10&search=${encodeURIComponent(search)}&status=${status}`);
-    if (!data.success) return;
+    if (!data.success) {
+      tbody.innerHTML = customersErrorRow(data.message || 'Could not load customers.');
+      toast(data.message || 'Could not load customers.', 'error');
+      return;
+    }
     const { docs, totalPages, totalDocs, page } = data.data;
     if (!docs.length) {
-      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><path d="M15.5 8.3a3.2 3.2 0 1 1 3 4.3"/><path d="M15 13.6c2.6.4 4.5 2.4 4.5 5.2"/></svg></div><p>No customers found.</p></div></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5.2 5.5-5.2s5.5 2.2 5.5 5.2"/><path d="M15.5 8.3a3.2 3.2 0 1 1 3 4.3"/><path d="M15 13.6c2.6.4 4.5 2.4 4.5 5.2"/></svg></div><p>No customers found.</p></div></td></tr>`;
     } else {
       tbody.innerHTML = docs.map(c => `
         <tr>
@@ -232,6 +262,7 @@ async function loadCustomers() {
           <td>${c.firstName} ${c.lastName}</td>
           <td>${c.meterNumber}</td>
           <td>${c.address}<br><span class="text-muted">${c.barangay}</span></td>
+          <td>${c.contactNumber ? c.contactNumber : '<span class="text-muted">—</span>'}${c.email ? `<br><span class="text-muted">${c.email}</span>` : ''}</td>
           <td>${statusBadge(c.connectionType)}</td>
           <td>${statusBadge(c.status)}</td>
           <td class="${c.outstandingBalance > 0 ? 'fw-600' : ''}" style="color:${c.outstandingBalance > 0 ? 'var(--red-400)' : 'inherit'}">${fmt(c.outstandingBalance)}</td>
@@ -245,7 +276,10 @@ async function loadCustomers() {
       `).join('');
     }
     renderPagination('customers-pagination', page, totalPages, totalDocs, (p) => { customersPage = p; loadCustomers(); });
-  } catch(e) {}
+  } catch(e) {
+    tbody.innerHTML = customersErrorRow(e.message || 'Could not load customers.');
+    toast(e.message || 'Could not load customers.', 'error');
+  }
 }
 
 document.getElementById('add-customer-btn').addEventListener('click', () => {
@@ -260,7 +294,7 @@ document.getElementById('add-customer-btn').addEventListener('click', () => {
 window.editCustomer = async (id) => {
   try {
     const data = await api(`/api/customers/${id}`);
-    if (!data.success) return;
+    if (!data.success) { toast(data.message || 'Could not load customer.', 'error'); return; }
     const c = data.data;
     document.getElementById('customer-modal-title').textContent = 'Edit Customer';
     document.getElementById('customer-id').value = c._id;
@@ -274,7 +308,9 @@ window.editCustomer = async (id) => {
     document.getElementById('c-connectionType').value = c.connectionType;
     document.getElementById('c-status').value = c.status;
     openModal('customer-modal');
-  } catch(e) {}
+  } catch(e) {
+    toast(e.message || 'Could not load customer.', 'error');
+  }
 };
 
 document.getElementById('save-customer-btn').addEventListener('click', async () => {
@@ -293,6 +329,10 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
   if (!body.firstName || !body.lastName || !body.address || !body.barangay || !body.meterNumber) {
     toast('Please fill in all required fields.', 'error'); return;
   }
+  const saveBtn = document.getElementById('save-customer-btn');
+  saveBtn.disabled = true;
+  const originalLabel = saveBtn.textContent;
+  saveBtn.textContent = 'Saving…';
   try {
     const method = id ? 'PUT' : 'POST';
     const path = id ? `/api/customers/${id}` : '/api/customers';
@@ -304,14 +344,23 @@ document.getElementById('save-customer-btn').addEventListener('click', async () 
     } else {
       toast(data.message || 'Error saving.', 'error');
     }
-  } catch(e) { toast('Error: ' + e.message, 'error'); }
+  } catch(e) {
+    toast(e.message || 'Error saving customer.', 'error');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalLabel;
+  }
 });
 
 window.deleteCustomer = async (id, name) => {
   if (!confirm(`Delete customer "${name}"? This cannot be undone.`)) return;
-  const data = await api(`/api/customers/${id}`, { method: 'DELETE' });
-  if (data.success) { toast('Customer deleted.', 'info'); loadCustomers(); }
-  else toast(data.message, 'error');
+  try {
+    const data = await api(`/api/customers/${id}`, { method: 'DELETE' });
+    if (data.success) { toast('Customer deleted.', 'info'); loadCustomers(); }
+    else toast(data.message || 'Could not delete customer.', 'error');
+  } catch (e) {
+    toast(e.message || 'Could not delete customer.', 'error');
+  }
 };
 
 // ── METER READING ──
@@ -342,16 +391,22 @@ function populateCurrentReadingOptions(prevValue) {
 async function loadMeterReading() {
   const sel = document.getElementById('mr-customer');
   sel.innerHTML = '<option value="">— Select customer —</option>';
-  const data = await api('/api/customers?limit=500');
-  if (data.success) {
-    data.data.docs.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c._id;
-      opt.textContent = `${c.accountNumber} — ${c.firstName} ${c.lastName}`;
-      // New customers with no prior bill have no currentReading yet — default to 0.
-      opt.dataset.prev = c.currentReading || 0;
-      sel.appendChild(opt);
-    });
+  try {
+    const data = await api('/api/customers?limit=500');
+    if (data.success) {
+      data.data.docs.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c._id;
+        opt.textContent = `${c.accountNumber} — ${c.firstName} ${c.lastName}`;
+        // New customers with no prior bill have no currentReading yet — default to 0.
+        opt.dataset.prev = c.currentReading || 0;
+        sel.appendChild(opt);
+      });
+    } else {
+      toast(data.message || 'Could not load customers.', 'error');
+    }
+  } catch (e) {
+    toast(e.message || 'Could not load customers.', 'error');
   }
   const now = new Date();
   document.getElementById('mr-month').value = now.getMonth() + 1;
@@ -376,16 +431,20 @@ document.getElementById('mr-calc-btn').addEventListener('click', async () => {
   const currentReading = parseFloat(document.getElementById('mr-current').value);
   if (!customerId) { toast('Select a customer first.', 'error'); return; }
   if (isNaN(currentReading)) { toast('Select current reading.', 'error'); return; }
-  const data = await api('/api/bills/calculate', { method:'POST', body: JSON.stringify({ customerId, currentReading }) });
-  if (!data.success) { toast(data.message, 'error'); return; }
-  const d = data.data;
-  document.getElementById('prev-consumption').textContent = `${d.consumption} m³`;
-  document.getElementById('prev-water').textContent = fmt(d.waterCharge);
-  document.getElementById('prev-env').textContent = fmt(d.environmentFee);
-  document.getElementById('prev-maint').textContent = fmt(d.maintenanceFee);
-  document.getElementById('prev-balance').textContent = fmt(d.previousBalance);
-  document.getElementById('prev-total').textContent = fmt(d.totalAmount);
-  document.getElementById('bill-preview').style.display = 'block';
+  try {
+    const data = await api('/api/bills/calculate', { method:'POST', body: JSON.stringify({ customerId, currentReading }) });
+    if (!data.success) { toast(data.message || 'Could not calculate bill.', 'error'); return; }
+    const d = data.data;
+    document.getElementById('prev-consumption').textContent = `${d.consumption} m³`;
+    document.getElementById('prev-water').textContent = fmt(d.waterCharge);
+    document.getElementById('prev-env').textContent = fmt(d.environmentFee);
+    document.getElementById('prev-maint').textContent = fmt(d.maintenanceFee);
+    document.getElementById('prev-balance').textContent = fmt(d.previousBalance);
+    document.getElementById('prev-total').textContent = fmt(d.totalAmount);
+    document.getElementById('bill-preview').style.display = 'block';
+  } catch (e) {
+    toast(e.message || 'Could not calculate bill.', 'error');
+  }
 });
 
 document.getElementById('mr-submit-btn').addEventListener('click', async () => {
@@ -398,15 +457,19 @@ document.getElementById('mr-submit-btn').addEventListener('click', async () => {
     remarks: document.getElementById('mr-remarks').value,
   };
   if (!body.customerId || isNaN(body.currentReading)) { toast('Fill in required fields.', 'error'); return; }
-  const data = await api('/api/bills', { method: 'POST', body: JSON.stringify(body) });
-  if (data.success) {
-    toast('Bill saved successfully!', 'success');
-    document.getElementById('mr-current').value = '';
-    document.getElementById('mr-remarks').value = '';
-    document.getElementById('bill-preview').style.display = 'none';
-    loadMeterReading();
-  } else {
-    toast(data.message || 'Error saving bill.', 'error');
+  try {
+    const data = await api('/api/bills', { method: 'POST', body: JSON.stringify(body) });
+    if (data.success) {
+      toast('Bill saved successfully!', 'success');
+      document.getElementById('mr-current').value = '';
+      document.getElementById('mr-remarks').value = '';
+      document.getElementById('bill-preview').style.display = 'none';
+      loadMeterReading();
+    } else {
+      toast(data.message || 'Error saving bill.', 'error');
+    }
+  } catch (e) {
+    toast(e.message || 'Error saving bill.', 'error');
   }
 });
 
@@ -425,7 +488,11 @@ async function loadBills() {
   tbody.innerHTML = '<tr><td colspan="8"><div class="loading">Loading…</div></td></tr>';
   try {
     const data = await api(`/api/bills?page=${billsPage}&limit=10&search=${encodeURIComponent(search)}&status=${status}`);
-    if (!data.success) return;
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p>${data.message || 'Could not load bills.'}</p></div></td></tr>`;
+      toast(data.message || 'Could not load bills.', 'error');
+      return;
+    }
     const { docs, totalPages, totalDocs, page } = data.data;
     const mo = fullMonths();
     if (!docs.length) {
@@ -453,17 +520,24 @@ async function loadBills() {
       `).join('');
     }
     renderPagination('bills-pagination', page, totalPages, totalDocs, (p) => { billsPage = p; loadBills(); });
-  } catch(e) {}
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><p>${e.message || 'Could not load bills.'}</p></div></td></tr>`;
+    toast(e.message || 'Could not load bills.', 'error');
+  }
 }
 
 window.deleteBill = async (billId) => {
   if (!confirm('Delete this bill? This cannot be undone.')) return;
-  const data = await api(`/api/bills/${billId}`, { method: 'DELETE' });
-  if (data.success) {
-    toast('Bill deleted.', 'info');
-    loadBills();
-  } else {
-    toast(data.message || 'Error deleting bill.', 'error');
+  try {
+    const data = await api(`/api/bills/${billId}`, { method: 'DELETE' });
+    if (data.success) {
+      toast('Bill deleted.', 'info');
+      loadBills();
+    } else {
+      toast(data.message || 'Error deleting bill.', 'error');
+    }
+  } catch (e) {
+    toast(e.message || 'Error deleting bill.', 'error');
   }
 };
 
@@ -477,16 +551,20 @@ document.getElementById('payments-search').addEventListener('input', () => {
 async function loadUnpaidBills() {
   const sel = document.getElementById('p-bill');
   sel.innerHTML = '<option value="">— Select unpaid bill —</option>';
-  const data = await api('/api/bills?limit=200&status=Unpaid');
-  const data2 = await api('/api/bills?limit=200&status=Overdue');
-  const bills = [...(data.data?.docs || []), ...(data2.data?.docs || [])];
-  const mo = fullMonths();
-  bills.forEach(b => {
-    const opt = document.createElement('option');
-    opt.value = b._id;
-    opt.textContent = `${b.customer?.accountNumber || ''} — ${b.customer?.firstName || ''} ${b.customer?.lastName || ''} | ${mo[(b.billingPeriod?.month||1)-1]} ${b.billingPeriod?.year || ''} | ${fmt(b.balance)}`;
-    sel.appendChild(opt);
-  });
+  try {
+    const data = await api('/api/bills?limit=200&status=Unpaid');
+    const data2 = await api('/api/bills?limit=200&status=Overdue');
+    const bills = [...(data.data?.docs || []), ...(data2.data?.docs || [])];
+    const mo = fullMonths();
+    bills.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b._id;
+      opt.textContent = `${b.customer?.accountNumber || ''} — ${b.customer?.firstName || ''} ${b.customer?.lastName || ''} | ${mo[(b.billingPeriod?.month||1)-1]} ${b.billingPeriod?.year || ''} | ${fmt(b.balance)}`;
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    toast(e.message || 'Could not load unpaid bills.', 'error');
+  }
 }
 
 // Shared logic for opening the Record Payment modal.
@@ -533,15 +611,19 @@ document.getElementById('save-payment-btn').addEventListener('click', async () =
     notes: document.getElementById('p-notes').value,
   };
   if (!body.bill || isNaN(body.amountPaid)) { toast('Fill in bill and amount.', 'error'); return; }
-  const data = await api('/api/payments', { method:'POST', body: JSON.stringify(body) });
-  if (data.success) {
-    toast('Payment recorded!', 'success');
-    closeModal('payment-modal');
-    loadPayments();
-    loadBills();
-    showReceipt(data.data);
-  } else {
-    toast(data.message || 'Error.', 'error');
+  try {
+    const data = await api('/api/payments', { method:'POST', body: JSON.stringify(body) });
+    if (data.success) {
+      toast('Payment recorded!', 'success');
+      closeModal('payment-modal');
+      loadPayments();
+      loadBills();
+      showReceipt(data.data);
+    } else {
+      toast(data.message || 'Error.', 'error');
+    }
+  } catch (e) {
+    toast(e.message || 'Error recording payment.', 'error');
   }
 });
 
@@ -592,9 +674,13 @@ function showReceipt(payment) {
 }
 
 window.viewReceipt = async (paymentId) => {
-  const data = await api(`/api/payments/${paymentId}`);
-  if (data.success) showReceipt(data.data);
-  else toast(data.message || 'Could not load receipt.', 'error');
+  try {
+    const data = await api(`/api/payments/${paymentId}`);
+    if (data.success) showReceipt(data.data);
+    else toast(data.message || 'Could not load receipt.', 'error');
+  } catch (e) {
+    toast(e.message || 'Could not load receipt.', 'error');
+  }
 };
 
 document.getElementById('print-receipt-btn').addEventListener('click', () => {
@@ -607,7 +693,11 @@ async function loadPayments() {
   tbody.innerHTML = '<tr><td colspan="7"><div class="loading">Loading…</div></td></tr>';
   try {
     const data = await api(`/api/payments?page=${paymentsPage}&limit=10&search=${encodeURIComponent(search)}`);
-    if (!data.success) return;
+    if (!data.success) {
+      tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>${data.message || 'Could not load payments.'}</p></div></td></tr>`;
+      toast(data.message || 'Could not load payments.', 'error');
+      return;
+    }
     const { docs, totalPages, totalDocs, page } = data.data;
     const mo = fullMonths();
     if (!docs.length) {
@@ -630,7 +720,10 @@ async function loadPayments() {
       `).join('');
     }
     renderPagination('payments-pagination', page, totalPages, totalDocs, (p) => { paymentsPage = p; loadPayments(); });
-  } catch(e) {}
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><p>${e.message || 'Could not load payments.'}</p></div></td></tr>`;
+    toast(e.message || 'Could not load payments.', 'error');
+  }
 }
 
 // ── SUMMARY REPORT ──
@@ -665,7 +758,7 @@ async function runReport() {
     if (!res.success) { toast(res.message || 'Failed to load report', 'error'); return; }
     renderReport(res.data);
   } catch (e) {
-    toast('Server error while generating report.', 'error');
+    toast(e.message || 'Server error while generating report.', 'error');
   }
 }
 

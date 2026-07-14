@@ -55,31 +55,35 @@ router.get('/lookup', async (req, res) => {
   }
 });
 
-// PUBLIC — pay a bill online via e-wallet (GCash / PayMaya).
-// This is a simulated payment gateway: no real money moves and no external
-// API keys are required. It mimics the flow of a real integration (PayMongo /
-// Xendit / direct GCash & Maya merchant APIs all work the same way — you
-// create a payment intent, the customer approves it in-app, the gateway
-// posts back a transaction reference, and you mark the bill as paid). When
-// you're ready to go live, swap the block marked "SIMULATED GATEWAY" below
-// for a real API call and verify its webhook/callback before marking the
-// payment Completed.
+// PUBLIC — pay a bill online via e-wallet (GCash / PayMaya) or Cash.
+// This is a simulated payment gateway for GCash/PayMaya: no real money moves
+// and no external API keys are required. It mimics the flow of a real
+// integration (PayMongo / Xendit / direct GCash & Maya merchant APIs all work
+// the same way — you create a payment intent, the customer approves it
+// in-app, the gateway posts back a transaction reference, and you mark the
+// bill as paid). Cash has no gateway step at all — it's recorded directly,
+// the same way a walk-in cash payment would be. When you're ready to go live
+// with e-wallets, swap the block marked "SIMULATED GATEWAY" below for a real
+// API call and verify its webhook/callback before marking the payment
+// Completed.
 router.post('/pay', async (req, res) => {
   try {
+    console.log('--- PAY REQUEST BODY ---', req.body);   // ADD THIS LINE
     const accountNumber = (req.body.account || '').trim();
     const lastName = (req.body.lastName || '').trim();
     const billId = (req.body.billId || '').trim();
-    const paymentMethod = (req.body.paymentMethod || '').trim(); // 'GCash' | 'PayMaya'
+    const paymentMethod = (req.body.paymentMethod || '').trim(); // 'GCash' | 'PayMaya' | 'Cash'
     const payerMobile = (req.body.payerMobile || '').trim();
     let amount = parseFloat(req.body.amount);
 
     if (!accountNumber || !lastName || !billId) {
       return res.status(400).json({ success: false, message: 'Missing account, last name, or bill.' });
     }
-    if (!['GCash', 'PayMaya'].includes(paymentMethod)) {
+    if (!['GCash', 'PayMaya', 'Cash'].includes(paymentMethod)) {
       return res.status(400).json({ success: false, message: 'Unsupported payment method.' });
     }
-    if (!/^09\d{9}$/.test(payerMobile)) {
+    // Mobile number is only required for e-wallets — Cash has no linked wallet
+    if (paymentMethod !== 'Cash' && !/^09\d{9}$/.test(payerMobile)) {
       return res.status(400).json({ success: false, message: 'Enter a valid 11-digit mobile number (e.g. 09XXXXXXXXX).' });
     }
 
@@ -99,11 +103,12 @@ router.post('/pay', async (req, res) => {
     if (isNaN(amount) || amount <= 0) amount = bill.balance;
     amount = Math.min(amount, bill.balance);
 
-    // ── SIMULATED GATEWAY ──
+    // ── SIMULATED GATEWAY (GCash / PayMaya only) ──
     // A real integration would create a checkout/payment-intent here, redirect
     // the customer to GCash/Maya to approve, then confirm via webhook. We
     // simulate an instant successful approval and let the Payment model
-    // auto-generate the transaction reference number.
+    // auto-generate the transaction reference number. Cash skips this
+    // entirely since there's no gateway involved.
     const actualPaid = amount;
 
     const payment = new Payment({
@@ -113,19 +118,23 @@ router.post('/pay', async (req, res) => {
       change: 0,
       paymentMode: paymentMethod,
       channel: 'Online',
-      payerMobile,
+      payerMobile: paymentMethod === 'Cash' ? '' : payerMobile,
       status: 'Completed',
       collectedBy: 'Customer Portal (Online)',
-      remarks: 'Paid online by customer',
+      remarks: paymentMethod === 'Cash' ? 'Paid cash via customer portal' : 'Paid online by customer',
     });
     await payment.save();
 
+    // Update bill — same balance/status logic as the walk-in and e-wallet
+    // paths, so Cash payments made through the portal are reflected
+    // correctly everywhere (including the central admin hub).
     bill.amountPaid += actualPaid;
     bill.balance     = Math.max(0, bill.totalAmount - bill.amountPaid);
     bill.status      = bill.balance <= 0 ? 'Paid' : 'Partial';
     if (bill.status === 'Paid') bill.paidDate = new Date();
     await bill.save();
 
+    // Update customer balance
     customer.outstandingBalance = Math.max(0, customer.outstandingBalance - actualPaid);
     await customer.save();
 
